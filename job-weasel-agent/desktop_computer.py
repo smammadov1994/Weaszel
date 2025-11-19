@@ -21,9 +21,24 @@ class DesktopComputer(Computer):
         pass
     
     def current_state(self) -> EnvState:
-        """Returns a minimal state without screenshot."""
+        """Returns a minimal state with desktop screenshot."""
+        import io
+        try:
+            # Take screenshot of the entire desktop
+            import pyautogui
+            screenshot = pyautogui.screenshot()
+            
+            # Convert PIL Image to bytes
+            img_byte_arr = io.BytesIO()
+            screenshot.save(img_byte_arr, format='PNG')
+            screenshot_bytes = img_byte_arr.getvalue()
+        except Exception as e:
+            # Fallback to empty if screenshot fails
+            screenshot_bytes = b''
+            print(f"Warning: Could not capture desktop screenshot: {e}")
+        
         return EnvState(
-            screenshot=b'',  # No screenshot for desktop-only
+            screenshot=screenshot_bytes,
             url="desktop://",
             error=None
         )
