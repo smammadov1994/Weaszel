@@ -174,7 +174,12 @@ class PlaywrightComputer(Computer):
         return self.current_state()
 
     def click_at(self, x: int, y: int):
-        self.highlight_mouse(x, y)
+        try:
+            self.highlight_mouse(x, y)
+        except Exception as e:
+            # Execution context might be destroyed after navigation (e.g., captcha)
+            # This is not critical, just skip highlighting
+            pass
         self._page.mouse.click(x, y)
         self._page.wait_for_load_state()
         return self.current_state()
