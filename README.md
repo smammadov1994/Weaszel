@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🌰 Weaszel
 
-## Getting Started
+> **Your Cozy AI Companion for the Web.**
+>
+> Weaszel lives in your terminal and surfs the web for you. From research to shopping, it handles the boring stuff so you can relax.
 
-First, run the development server:
+![Weaszel Screenshot](assets/screenshot.png)
+
+## 🚀 Features
+
+- **🦊 Stealth Mode:** Connects to your existing Chrome browser to bypass Cloudflare, Captchas, and bot detection effortlessly.
+- **🧠 Gemini Powered:** Uses Google's latest `gemini-2.5-computer-use-preview` model to "see" and interact with the web.
+- **⚡ Rapid Fire:** Automates repetitive tasks like job applications, form filling, and data entry.
+- **🛡️ Full Control:** You own the agent. No hidden limits, no "safety" blocks on booking flights. It runs locally on your machine.
+
+## 🛠️ Architecture
+
+Weaszel uses a "Human-in-the-Loop" architecture powered by Google Gemini and Playwright.
+
+![Architecture Diagram](assets/architecture.png)
+
+1.  **Capture:** The agent takes a screenshot of your browser.
+2.  **Analyze:** Gemini analyzes the screen and decides the next action (click, type, scroll).
+3.  **Execute:** Playwright executes the action in your browser.
+4.  **Repeat:** The loop continues until the task is done.
+
+## 📦 Installation
+
+You can install Weaszel with a single command:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+curl -sL https://weaszel.com/install.sh | bash
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Or manually:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1.  Clone the repo:
+    ```bash
+    git clone https://github.com/smammadov1994/Weaszel.git
+    cd Weaszel/job-weasel-agent
+    ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2.  Install dependencies:
+    ```bash
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
+    playwright install chromium
+    ```
 
-## Learn More
+3.  Run it:
+    ```bash
+    python weasel.py
+    ```
 
-To learn more about Next.js, take a look at the following resources:
+## 🔑 Setup
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1.  **Get a Gemini API Key:** [Google AI Studio](https://aistudio.google.com/app/apikey)
+2.  **Launch Chrome (Optional):** For Stealth Mode, launch your Chrome with remote debugging:
+    ```bash
+    ./start_chrome.sh
+    ```
+3.  **Start Weaszel:** Follow the on-screen instructions to connect.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🤝 Contributing
 
-## Deploy on Vercel
+Weaszel is open source! Feel free to open issues or submit PRs.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## ☕ Support
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+If Weaszel helps you save time (or land a job!), consider buying me a coffee.
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/smammadov94)
+
+---
+
+*Built with ❤️ by Seymur.*
