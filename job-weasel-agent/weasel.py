@@ -42,7 +42,7 @@ from rich.console import Group
 def print_welcome():
     console.clear()
     
-    # ASCII Art & Title
+    # ASCII Art - Display ABOVE the box
     weasel_art = """
 ⠀⠀⠀⠀⠀⠀⠀⠀⣠⡶⣛⣉⣙⢦⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⣾⠋⠁⠀⠀⠀⠑⣿⣆⠀⢠⡤⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -68,40 +68,39 @@ def print_welcome():
 ⠀⠀⠀⠀⠀⠀⠀⠀⠧⣀⣀⡠⠶⠋⠁⠀⠀⠀⠀⠉⠉⠙⠛⠛⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
     """
     
-    welcome_text = Text(weasel_art, style="bold magenta")
+    # Print the weasel art centered
+    console.print(Align.center(Text(weasel_art, style="bold magenta")))
     
-    subtitle = Text("\n🦊 The AI Agent that gets you hired.", style="italic cyan")
-    
-    # Version Info
+    # Compact panel with just title and version
+    subtitle = Text("🦊 The AI Agent that gets you hired.", style="italic cyan")
     version_table = Table(show_header=False, box=None)
     version_table.add_row("[bold green]Version:[/bold green] 1.0.0", "[bold blue]Engine:[/bold blue] Gemini 2.0 Flash")
     
-    # Examples Table
+    panel_content = Group(
+        Align.center(subtitle),
+        Text("\n"),
+        Align.center(version_table)
+    )
+    
+    console.print(Panel(
+        panel_content,
+        border_style="magenta",
+        title="[bold white]WEASZEL[/bold white]",
+        subtitle="[bold green]Ready to Hunt[/bold green]",
+        padding=(1, 2)
+    ))
+    
+    # Examples table BELOW the box
+    console.print("\n")
     examples_table = Table(title="[bold white]Try asking me:[/bold white]", box=None, show_header=False)
     examples_table.add_row("🚀", "[cyan]Start rapid fire applications in NY[/cyan]")
     examples_table.add_row("�", "[cyan]Research the latest AI news on TechCrunch[/cyan]")
     examples_table.add_row("✈️", "[cyan]Find a cheap flight to Tokyo on Kayak[/cyan]")
     examples_table.add_row("�", "[cyan]Go to Amazon and find a mechanical keyboard[/cyan]")
     examples_table.add_row("🛑", "[red]Stop or Exit[/red]")
-
-    # Main Panel
-    panel_content = Group(
-        Align.center(welcome_text),
-        Align.center(subtitle),
-        Text("\n"),
-        Align.center(version_table),
-        Text("\n"),
-        Align.center(examples_table),
-        Text("\n[dim]Powered by Google Gemini Computer Use[/dim]", justify="center")
-    )
     
-    console.print(Panel(
-        panel_content,
-        border_style="magenta",
-        title="[bold white]JOB WEASEL[/bold white]",
-        subtitle="[bold green]Ready to Hunt[/bold green]",
-        padding=(1, 2)
-    ))
+    console.print(Align.center(examples_table))
+    console.print(Align.center(Text("\n[dim]Powered by Google Gemini Computer Use[/dim]\n")))
 
 def main():
     print_welcome()
