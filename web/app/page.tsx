@@ -71,6 +71,7 @@ export default function LandingPage() {
                 <a href="#features" className="hover:text-amber-500 transition-colors">Features</a>
                 <a href="/blog" className="hover:text-amber-500 transition-colors">Blog</a>
                 <a href="#install" className="hover:text-amber-500 transition-colors">Install</a>
+                <a href="#uninstall" className="hover:text-amber-500 transition-colors">Uninstall</a>
              </div>
              <a 
                href="https://buymeacoffee.com/surfingcoin" 
@@ -206,6 +207,33 @@ export default function LandingPage() {
             <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-amber-600 hover:text-amber-500 hover:underline text-sm transition-colors">
               Get your Gemini API Key here →
             </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Uninstall Section */}
+      <section id="uninstall" className="py-20 px-6 border-t border-stone-800 bg-[#1c1917]/50">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl font-bold mb-4 text-stone-100">Need to uninstall?</h2>
+          <p className="text-stone-400 mb-8">No hard feelings. Here's how to cleanly remove Weaszel.</p>
+          
+          <div className="bg-[#0c0a09] border border-stone-800 rounded-xl p-6 max-w-2xl mx-auto group hover:border-red-700/50 transition-all shadow-2xl">
+            <code className="text-red-400 font-mono text-sm md:text-base block text-left">
+              rm -rf ~/.weaszel<br/>
+              sed -i '' '/alias weaszel/d' ~/.zshrc<br/>
+              source ~/.zshrc
+            </code>
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText("rm -rf ~/.weaszel\nsed -i '' '/alias weaszel/d' ~/.zshrc\nsource ~/.zshrc");
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }}
+              className="mt-4 flex items-center gap-2 mx-auto px-4 py-2 hover:bg-stone-800 rounded-lg transition-colors text-stone-500 hover:text-stone-300"
+            >
+              {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+              <span className="text-sm">{copied ? 'Copied!' : 'Copy commands'}</span>
+            </button>
           </div>
         </div>
       </section>
