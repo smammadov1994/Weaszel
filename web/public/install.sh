@@ -23,11 +23,16 @@ if [ -d "$INSTALL_DIR" ]; then
     cd "$INSTALL_DIR"
     git pull
 else
+    # Clone the repo
     echo -e "${GREEN}Cloning repository...${NC}"
-    git clone https://github.com/smammadov94/job-weasel.git "$INSTALL_DIR"
+    if [ -d "$INSTALL_DIR" ]; then
+        rm -rf "$INSTALL_DIR"
+    fi
+    git clone https://github.com/smammadov1994/Weaszel.git "$INSTALL_DIR"
 fi
 
-cd "$INSTALL_DIR/job-weasel-agent"
+# Change into the install directory
+cd "$INSTALL_DIR"
 
 # Setup Venv
 echo -e "${GREEN}Setting up virtual environment...${NC}"
@@ -44,19 +49,17 @@ echo -e "${GREEN}Installing browsers...${NC}"
 playwright install chromium
 
 # Create Alias
-SHELL_CONFIG=""
-if [ -f "$HOME/.zshrc" ]; then
-    SHELL_CONFIG="$HOME/.zshrc"
-elif [ -f "$HOME/.bashrc" ]; then
+echo "Creating alias..."
+SHELL_CONFIG="$HOME/.zshrc"
+if [ -f "$HOME/.bashrc" ]; then
     SHELL_CONFIG="$HOME/.bashrc"
 fi
 
-if [ ! -z "$SHELL_CONFIG" ]; then
-    if ! grep -q "alias weaszel=" "$SHELL_CONFIG"; then
-        echo -e "${GREEN}Adding 'weaszel' alias to $SHELL_CONFIG...${NC}"
-        echo "alias weaszel='cd $INSTALL_DIR/job-weasel-agent && source venv/bin/activate && python weasel.py'" >> "$SHELL_CONFIG"
-    fi
-fi
+# Remove old alias if exists
+sed -i '' '/alias weaszel/d' "$SHELL_CONFIG"
+
+# Add new alias
+echo "alias weaszel='source $INSTALL_DIR/venv/bin/activate && python $INSTALL_DIR/weasel.py'" >> "$SHELL_CONFIG"
 
 echo -e "\n${GREEN}✅ Installation Complete!${NC}"
 echo -e "Restart your terminal or run 'source $SHELL_CONFIG'"
