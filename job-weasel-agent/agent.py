@@ -414,17 +414,36 @@ class BrowserAgent:
     ) -> Literal["CONTINUE", "TERMINATE"]:
         if safety["decision"] != "require_confirmation":
             raise ValueError(f"Unknown safety decision: safety['decision']")
-        termcolor.cprint(
-            "Safety service requires explicit confirmation!",
-            color="yellow",
-            attrs=["bold"],
-        )
-        print(safety["explanation"])
-        decision = ""
-        while decision.lower() not in ("y", "n", "ye", "yes", "no"):
-            decision = input("Do you wish to proceed? [Yes]/[No]\n")
+        
+        # Import rich for beautiful formatting
+        from rich.console import Console
+        from rich.panel import Panel
+        from rich.text import Text
+        
+        console = Console()
+        
+        # Create beautiful alert message
+        alert_text = Text()
+        alert_text.append("🤖 CAPTCHA Detected!\n\n", style="bold yellow")
+        alert_text.append(safety["explanation"] + "\n\n", style="white")
+        alert_text.append("Press ", style="dim")
+        alert_text.append("ENTER", style="bold green")
+        alert_text.append(" to let me continue, or type ", style="dim")
+        alert_text.append("'no'", style="bold red")
+        alert_text.append(" to stop.", style="dim")
+        
+        console.print(Panel(
+            alert_text,
+            title="[bold yellow]⚠️  Human Confirmation Required[/bold yellow]",
+            border_style="yellow",
+            padding=(1, 2)
+        ))
+        
+        decision = input("\n> ")
         if decision.lower() in ("n", "no"):
+            console.print("[red]❌ Stopped by user[/red]")
             return "TERMINATE"
+        console.print("[green]✅ Continuing...[/green]")
         return "CONTINUE"
 
     def agent_loop(self):
