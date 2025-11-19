@@ -34,14 +34,20 @@ fi
 # Change into the install directory
 cd "$INSTALL_DIR/job-weasel-agent"
 
-# Setup Venv
-echo -e "${GREEN}Setting up virtual environment...${NC}"
+# Setup Virtual Environment
+echo "Setting up virtual environment..."
+cd "$INSTALL_DIR/job-weasel-agent"
 python3 -m venv venv
 source venv/bin/activate
 
 # Install Dependencies
-echo -e "${GREEN}Installing dependencies...${NC}"
-pip install -r requirements.txt
+echo "Installing dependencies..."
+if [ -f "requirements.txt" ]; then
+    pip install -r requirements.txt
+else
+    echo "ERROR: requirements.txt not found in $(pwd)"
+    exit 1
+fi
 pip install loguru python-dotenv rich playwright google-genai browserbase termcolor
 
 # Install Playwright Browsers
