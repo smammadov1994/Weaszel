@@ -111,7 +111,14 @@ def main():
         console.print("[yellow]⚠️ GEMINI_API_KEY not found in environment.[/yellow]")
         console.print("Get your key here: [link=https://aistudio.google.com/app/apikey]https://aistudio.google.com/app/apikey[/link]")
         api_key = Prompt.ask("[bold green]Enter your Gemini API Key[/bold green]", password=True)
+        
+        # Save to .env.local for persistence
+        env_file = os.path.join(os.path.dirname(__file__), '.env.local')
+        with open(env_file, 'w') as f:
+            f.write(f'GEMINI_API_KEY={api_key}\n')
+        
         os.environ["GEMINI_API_KEY"] = api_key
+        console.print("[green]✅ API key saved! You won't need to enter it again.[/green]")
     
     # Load User Data
     user_data = load_user_data()
