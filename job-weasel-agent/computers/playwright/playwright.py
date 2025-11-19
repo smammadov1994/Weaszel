@@ -328,7 +328,14 @@ class PlaywrightComputer(Computer):
         return self.current_state()
 
     def current_state(self) -> EnvState:
-        self._page.wait_for_load_state()
+        # Use a shorter timeout and catch errors for pages that never fully load
+        # (common with modern sites that have lazy loading, infinite scroll, etc.)
+        try:
+            self._page.wait_for_load_state(timeout=5000)  # 5 seconds instead of 30
+        except Exception:
+            # Page didn't fully load, but that's okay - just continue
+            pass
+        
         # Even if Playwright reports the page as loaded, it may not be so.
         # Add a manual sleep to make sure the page has finished rendering.
         time.sleep(0.5)
