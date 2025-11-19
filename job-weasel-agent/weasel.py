@@ -124,34 +124,11 @@ def main():
     user_data = load_user_data()
     if user_data:
         console.print("[green]✅ User profile loaded from user_data.md[/green]")
-    else:
-        console.print("[yellow]⚠️ No user_data.md found. Creating template...[/yellow]")
-        # (Template creation logic could go here, but I already created it)
 
-    # Browser Selection
-    console.print("\n[bold cyan]Which browser should I use?[/bold cyan]")
-    console.print("[1] [bold white]Standard Chromium[/bold white] (Easiest, but might be detected)")
-    console.print("[2] [bold white]Your Own Chrome[/bold white] (Stealthy, bypasses Cloudflare)")
+    # Main loop - ask for task first!
+    browser_initialized = False
+    browser_choice = None
     
-    browser_choice = Prompt.ask("[bold magenta]Select Option[/bold magenta]", choices=["1", "2"], default="1")
-    
-    if browser_choice == "2":
-        # Guide for Own Chrome
-        instructions = """
-[bold yellow]Step 1:[/bold yellow] Close ALL existing Chrome windows completely.
-[bold yellow]Step 2:[/bold yellow] Open a new terminal window.
-[bold yellow]Step 3:[/bold yellow] Run this command:
-    [green]./start_chrome.sh[/green]
-[bold yellow]Step 4:[/bold yellow] Log in to Indeed/LinkedIn in that new window.
-        """
-        console.print(Panel(instructions, title="[bold green]Setup Instructions[/bold green]", border_style="green"))
-        Prompt.ask("[bold magenta]Press Enter when Chrome is ready and you are logged in...[/bold magenta]")
-        os.environ["CHROME_DEBUG_PORT"] = "9222"
-    else:
-        # Standard Chromium
-        if "CHROME_DEBUG_PORT" in os.environ:
-            del os.environ["CHROME_DEBUG_PORT"]
-
     while True:
         console.print("\n[bold cyan]What would you like me to do?[/bold cyan]")
         query = Prompt.ask("[bold magenta]>[/bold magenta]")
@@ -167,22 +144,69 @@ def main():
         console.print(f"\n[bold]🚀 Starting Agent with task:[/bold] {query}")
 
         try:
-            # Initialize Environment
-            env = PlaywrightComputer(
-                screen_size=PLAYWRIGHT_SCREEN_SIZE,
-                initial_url="https://www.google.com",
-                highlight_mouse=True
-            )
-
-            with env as browser_computer:
-                agent = BrowserAgent(
-                    browser_computer=browser_computer,
-                    query=full_query,
-                    model_name='gemini-2.5-computer-use-preview-10-2025'
-                )
+            # Lazy browser initialization - only when needed
+            if not browser_initialized:
+                # Ask Gemini if this task needs browser
+                console.print("[dim]🤔 Analyzing if browser is needed...[/dim]")
                 
-                # Run the loop
-                agent.agent_loop()
+                # Simple heuristic: if task mentions websites, searching, or browser actions
+                needs_browser = any(keyword in query.lower() for keyword in [
+                    'search', 'google', 'website', 'amazon', 'indeed', 'linkedin',
+                    'browse', 'find on', 'shop', 'buy', 'flight', 'kayak', 'book'
+                ])
+                
+                if needs_browser:
+                    console.print("\n[bold cyan]This task requires a browser. Which one should I use?[/bold cyan]")
+                    console.print("[1] [bold white]Standard Chromium[/bold white] (Easiest, but might be detected)")
+                    console.print("[2] [bold white]Your Own Chrome[/bold white] (Stealthy, bypasses Cloudflare)")
+                    
+                    browser_choice = Prompt.ask("[bold magenta]Select Option[/bold magenta]", choices=["1", "2"], default="1")
+                    
+                    if browser_choice == "2":
+                        instructions = """
+[bold yellow]Step 1:[/bold yellow] Close ALL existing Chrome windows completely.
+[bold yellow]Step 2:[/bold yellow] Open a new terminal window.
+[bold yellow]Step 3:[/bold yellow] Run this command:
+    [green]./start_chrome.sh[/green]
+[bold yellow]Step 4:[/bold yellow] Log in if needed.
+                        """
+                        console.print(Panel(instructions, title="[bold green]Setup Instructions[/bold green]", border_style="green"))
+                        Prompt.ask("[bold magenta]Press Enter when Chrome is ready...[/bold magenta]")
+                        os.environ["CHROME_DEBUG_PORT"] = "9222"
+                    else:
+                        if "CHROME_DEBUG_PORT" in os.environ:
+                            del os.environ["CHROME_DEBUG_PORT"]
+                    
+                    browser_initialized = True
+                else:
+                    console.print("[dim]💻 No browser needed - using desktop tools only[/dim]")
+
+            # Initialize Environment (only if browser was requested)
+            if browser_initialized:
+                env = PlaywrightComputer(
+                    screen_size=PLAYWRIGHT_SCREEN_SIZE,
+                    initial_url="https://www.google.com",
+                    highlight_mouse=True
+                )
+
+                with env as browser_computer:
+                    agent = BrowserAgent(
+                        browser_computer=browser_computer,
+                        query=full_query,
+                        model_name='gemini-2.5-computer-use-preview-10-2025'
+                    )
+                    
+                    # Run the loop
+                    agent.agent_loop()
+            else:
+                # Desktop-only mode - no browser
+                console.print("[yellow]⚠️ Desktop-only mode is experimental![/yellow]")
+                console.print("[yellow]Creating a minimal agent for desktop tasks...[/yellow]")
+                # TODO: Create a desktop-only agent that doesn't need browser
+                # For now, just inform the user
+                console.print("[red]Desktop-only mode not fully implemented yet.[/red]")
+                console.print("[yellow]Tip: For desktop+web tasks, try: \"Open Finder and then search Google for X\"[/yellow]")
+                continue
                 
             console.print("[bold green]✅ Task Completed![/bold green]")
 
