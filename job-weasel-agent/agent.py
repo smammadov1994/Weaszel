@@ -91,9 +91,15 @@ class BrowserAgent:
         # Exclude any predefined functions here.
         excluded_predefined_functions = []
 
+        # Import desktop automation functions
+        from desktop_functions import get_desktop_functions, DESKTOP_FUNCTION_MAP
+        
+        # Store desktop function map for execution
+        self._desktop_function_map = DESKTOP_FUNCTION_MAP
+
         # Add your own custom functions here.
-        custom_functions = [
-            # For example:
+        custom_functions = get_desktop_functions() + [
+            # Example math function
             types.FunctionDeclaration.from_callable(
                 client=self._client, callable=multiply_numbers
             )
@@ -190,6 +196,13 @@ class BrowserAgent:
         # Handle the custom function declarations here.
         elif action.name == multiply_numbers.__name__:
             return multiply_numbers(x=action.args["x"], y=action.args["y"])
+        # Handle desktop automation functions
+        elif action.name in self._desktop_function_map:
+            console.print(f"[yellow]🖥️  Desktop action: {action.name}[/yellow]")
+            func = self._desktop_function_map[action.name]
+            result = func(**action.args)
+            console.print(f"[green]✅ Result: {result}[/green]")
+            return result
         else:
             raise ValueError(f"Unsupported function: {action}")
 
