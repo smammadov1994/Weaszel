@@ -199,14 +199,22 @@ def main():
                     # Run the loop
                     agent.agent_loop()
             else:
-                # Desktop-only mode - no browser
-                console.print("[yellow]⚠️ Desktop-only mode is experimental![/yellow]")
-                console.print("[yellow]Creating a minimal agent for desktop tasks...[/yellow]")
-                # TODO: Create a desktop-only agent that doesn't need browser
-                # For now, just inform the user
-                console.print("[red]Desktop-only mode not fully implemented yet.[/red]")
-                console.print("[yellow]Tip: For desktop+web tasks, try: \"Open Finder and then search Google for X\"[/yellow]")
-                continue
+                # Desktop-only mode - use desktop computer
+                console.print("[yellow]💻 Desktop-only mode - no browser needed![/yellow]")
+                
+                from desktop_computer import DesktopComputer
+                
+                env = DesktopComputer()
+                
+                with env as desktop_computer:
+                    agent = BrowserAgent(
+                        browser_computer=desktop_computer,
+                        query=full_query,
+                        model_name='gemini-2.5-computer-use-preview-10-2025'
+                    )
+                    
+                    # Run the loop
+                    agent.agent_loop()
                 
             console.print("[bold green]✅ Task Completed![/bold green]")
 
