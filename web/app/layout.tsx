@@ -46,6 +46,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://weazel.com",
   },
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({
