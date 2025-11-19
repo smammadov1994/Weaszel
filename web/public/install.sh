@@ -32,7 +32,7 @@ else
 fi
 
 # Change into the install directory
-cd "$INSTALL_DIR"
+cd "$INSTALL_DIR/job-weasel-agent"
 
 # Setup Venv
 echo -e "${GREEN}Setting up virtual environment...${NC}"
@@ -59,7 +59,7 @@ fi
 sed -i '' '/alias weaszel/d' "$SHELL_CONFIG"
 
 # Add new alias
-echo "alias weaszel='source $INSTALL_DIR/venv/bin/activate && python $INSTALL_DIR/weasel.py'" >> "$SHELL_CONFIG"
+echo "alias weaszel='source $INSTALL_DIR/job-weasel-agent/venv/bin/activate && python $INSTALL_DIR/job-weasel-agent/weasel.py'" >> "$SHELL_CONFIG"
 
 echo -e "\n${GREEN}✅ Installation Complete!${NC}"
 echo -e "Restart your terminal or run 'source $SHELL_CONFIG'"
