@@ -7,4 +7,3 @@ rich
 pytest
 python-dotenv
 loguru
-pyautogui

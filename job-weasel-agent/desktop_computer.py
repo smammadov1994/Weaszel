@@ -22,16 +22,25 @@ class DesktopComputer(Computer):
     
     def current_state(self) -> EnvState:
         """Returns a minimal state with desktop screenshot."""
-        import io
+        import subprocess
+        import tempfile
+        import os
+        
         try:
-            # Take screenshot of the entire desktop
-            import pyautogui
-            screenshot = pyautogui.screenshot()
+            # Use macOS screencapture to take screenshot
+            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
+                tmp_path = tmp.name
             
-            # Convert PIL Image to bytes
-            img_byte_arr = io.BytesIO()
-            screenshot.save(img_byte_arr, format='PNG')
-            screenshot_bytes = img_byte_arr.getvalue()
+            # Capture entire screen
+            subprocess.run(['screencapture', '-x', tmp_path], check=True, capture_output=True)
+            
+            # Read the screenshot
+            with open(tmp_path, 'rb') as f:
+                screenshot_bytes = f.read()
+            
+            # Clean up
+            os.unlink(tmp_path)
+            
         except Exception as e:
             # Fallback to empty if screenshot fails
             screenshot_bytes = b''
