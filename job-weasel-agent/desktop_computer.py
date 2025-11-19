@@ -7,7 +7,12 @@ class DesktopComputer(Computer):
     """A minimal computer implementation for desktop-only tasks."""
     
     def __init__(self):
-        pass
+        self._screen_size = (1440, 900)  # Default screen size
+    
+    @property
+    def screen_size(self) -> tuple[int, int]:
+        """Returns the screen dimensions."""
+        return self._screen_size
     
     def __enter__(self):
         return self
