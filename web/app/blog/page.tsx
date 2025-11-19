@@ -35,6 +35,15 @@ export default function BlogPage() {
           <p className="text-xl text-stone-400 leading-relaxed">
             Big tech wants you to rent their agents for $20/month. Weaszel proves there's a better, cheaper, and more powerful way.
           </p>
+          <div className="mt-6 flex flex-wrap gap-4 text-sm">
+            <a href="https://weaszel.com" target="_blank" className="text-amber-500 hover:text-amber-400 transition-colors">
+              🌐 weaszel.com
+            </a>
+            <span className="text-stone-700">•</span>
+            <a href="https://github.com/smammadov1994/Weaszel" target="_blank" className="text-amber-500 hover:text-amber-400 transition-colors">
+              💻 GitHub Repository
+            </a>
+          </div>
         </div>
 
         <div className="prose prose-invert prose-stone max-w-none">
@@ -124,6 +133,18 @@ export default function BlogPage() {
           </p>
           
           <div className="mt-12 pt-8 border-t border-stone-800">
+            <div className="mb-6 text-center">
+              <p className="text-stone-400 mb-4">Ready to own your AI?</p>
+              <div className="flex flex-wrap justify-center gap-4 text-sm mb-6">
+                <a href="https://weaszel.com" target="_blank" className="text-amber-500 hover:text-amber-400 transition-colors">
+                  🌐 weaszel.com
+                </a>
+                <span className="text-stone-700">•</span>
+                <a href="https://github.com/smammadov1994/Weaszel" target="_blank" className="text-amber-500 hover:text-amber-400 transition-colors">
+                  💻 GitHub Repository
+                </a>
+              </div>
+            </div>
             <Link href="/#install" className="inline-flex items-center justify-center gap-2 bg-amber-700 hover:bg-amber-600 text-white px-8 py-4 rounded-lg font-bold transition-all w-full md:w-auto">
               <Terminal className="w-5 h-5" />
               Install Weaszel Now
