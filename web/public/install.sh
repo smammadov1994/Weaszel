@@ -32,12 +32,11 @@ else
     git clone https://github.com/smammadov1994/Weaszel.git "$INSTALL_DIR"
 fi
 
-# Change into the install directory
-cd "$INSTALL_DIR/job-weasel-agent"
+# Change into the agent directory
+cd "$INSTALL_DIR/job-weasel-agent" || exit 1
 
 # Setup Virtual Environment
 echo "Setting up virtual environment..."
-cd "$INSTALL_DIR/job-weasel-agent"
 python3 -m venv venv
 source venv/bin/activate
 
