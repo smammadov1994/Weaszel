@@ -200,7 +200,9 @@ class BrowserAgent:
         elif action.name in self._desktop_function_map:
             console.print(f"[yellow]🖥️  Desktop action: {action.name}[/yellow]")
             func = self._desktop_function_map[action.name]
-            result = func(**action.args)
+            # Filter out safety_decision - it's handled separately
+            clean_args = {k: v for k, v in action.args.items() if k != 'safety_decision'}
+            result = func(**clean_args)
             console.print(f"[green]✅ Result: {result}[/green]")
             return result
         else:
