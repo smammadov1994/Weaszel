@@ -73,7 +73,7 @@ export default function LandingPage() {
                 <a href="#install" className="hover:text-amber-500 transition-colors">Install</a>
              </div>
              <a 
-               href="https://buymeacoffee.com/smammadov94" 
+               href="https://buymeacoffee.com/surfingcoin" 
                target="_blank"
                className="flex items-center gap-2 bg-[#3f3026] hover:bg-[#554134] text-amber-100 px-4 py-2 rounded-full text-sm font-bold transition-all border border-amber-900/30"
              >
@@ -108,7 +108,7 @@ export default function LandingPage() {
                 <Download className="w-5 h-5" />
                 Get Weaszel
               </a>
-              <a href="https://github.com/smammadov94/job-weasel" target="_blank" className="flex items-center justify-center gap-2 border border-stone-700 hover:bg-stone-800 text-stone-300 px-8 py-4 rounded-lg font-bold transition-all">
+              <a href="https://github.com/smammadov1994/Weaszel" target="_blank" className="flex items-center justify-center gap-2 border border-stone-700 hover:bg-stone-800 text-stone-300 px-8 py-4 rounded-lg font-bold transition-all">
                 View Source
               </a>
             </div>

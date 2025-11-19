@@ -70,7 +70,7 @@ Weaszel is open source! Feel free to open issues or submit PRs.
 
 If Weaszel helps you save time (or land a job!), consider buying me a coffee.
 
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/smammadov94)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/surfingcoin)
 
 ---
 
