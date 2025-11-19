@@ -72,7 +72,7 @@ def print_welcome():
     console.print(Align.center(Text(weasel_art, style="bold magenta")))
     
     # Compact panel with just title and version
-    subtitle = Text("🦊 The AI Agent that gets you hired.", style="italic cyan")
+    subtitle = Text("🦊 Your AI Agent for the Web.", style="italic cyan")
     version_table = Table(show_header=False, box=None)
     version_table.add_row("[bold green]Version:[/bold green] 1.0.0", "[bold blue]Engine:[/bold blue] Gemini 2.5 Computer Use")
     
