@@ -9,7 +9,6 @@ class DesktopComputer(Computer):
     def __init__(self):
         self._screen_size = (1440, 900)  # Default screen size
     
-    @property
     def screen_size(self) -> tuple[int, int]:
         """Returns the screen dimensions."""
         return self._screen_size
