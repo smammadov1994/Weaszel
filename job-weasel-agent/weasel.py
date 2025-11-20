@@ -6,7 +6,7 @@ from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.markdown import Markdown
 from rich.status import Status
-from dotenv import load_dotenv
+from dotenv import load_dotenv, set_key
 from loguru import logger
 
 # Load environment variables
