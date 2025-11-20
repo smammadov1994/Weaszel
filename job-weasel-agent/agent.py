@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import warnings
 from typing import Literal, Optional, Union, Any
 from google import genai
 from google.genai import types
@@ -27,6 +28,11 @@ from google.genai.types import (
 import time
 from rich.console import Console
 from rich.table import Table
+from loguru import logger
+
+# Suppress AFC warning messages
+warnings.filterwarnings('ignore', message='.*AFC.*')
+warnings.filterwarnings('ignore', message='.*automatic function calling.*')
 
 from computers import EnvState, Computer
 
@@ -124,6 +130,193 @@ class BrowserAgent:
                 types.Tool(function_declarations=custom_functions),
             ],
         )
+        
+        # Track actions for completion detection
+        self._action_history = []
+        self._iteration_count = 0
+        self._max_iterations = 30  # Safety limit
+        
+        # Hierarchical planning state
+        self._current_plan = []  # Queue of planned actions
+        self._plan_context = ""  # Context from last planning session
+
+    def create_action_plan(self, current_state: str) -> list[dict]:
+        """Create a multi-step action plan using Gemini Flash.
+        
+        Returns:
+            List of planned actions with reasoning
+        """
+        try:
+            planning_prompt = f"""
+You are planning actions for: {self._query}
+
+Current state: {current_state}
+Actions taken so far: {len(self._action_history)}
+
+Create a plan of 3-5 specific actions to make progress. For each action:
+1. What to do (click, type, scroll, etc.)
+2. Why this action helps
+3. What element to interact with
+
+Format as JSON array:
+[
+  {{"action": "click", "target": "element description", "reason": "why"}},
+  {{"action": "type", "text": "what to type", "target": "where", "reason": "why"}},
+  ...
+]
+
+Be specific and actionable. Focus on the NEXT steps, not the entire task.
+"""
+            
+            response = self._client.models.generate_content(
+                model='gemini-2.0-flash-exp',  # Fast model for planning
+                contents=planning_prompt
+            )
+            
+            import json
+            import re
+            
+            # Extract JSON from response
+            text = response.text.strip()
+            # Find JSON array in the response
+            json_match = re.search(r'\[.*\]', text, re.DOTALL)
+            if json_match:
+                plan = json.loads(json_match.group())
+                console.print(f"[cyan]📋 Created plan with {len(plan)} steps[/cyan]")
+                return plan
+            else:
+                logger.warning("Could not parse plan from response")
+                return []
+                
+        except Exception as e:
+            logger.error(f"Planning failed: {e}")
+            return []
+
+    def should_take_screenshot(self, action_name: str) -> bool:
+        """Determine if we need a screenshot after this action.
+        
+        Skip screenshots for actions that don't change visual state much.
+        """
+        # Always screenshot for these (they change what's visible)
+        visual_actions = {
+            'click', 'click_at', 'navigate', 'scroll', 'scroll_at',
+            'scroll_document', 'go_back', 'go_forward', 'open_app',
+            'drag_and_drop'
+        }
+        
+        # Skip screenshots for these (minimal visual change)
+        non_visual_actions = {
+            'type_text', 'type_text_at', 'key_combination',
+            'wait_5_seconds', 'hotkey', 'execute_applescript'
+        }
+        
+        if action_name in visual_actions:
+            return True
+        elif action_name in non_visual_actions:
+            # Take screenshot every 3 non-visual actions to stay updated
+            non_visual_count = sum(
+                1 for a in self._action_history[-3:]
+                if a['name'] in non_visual_actions
+            )
+            return non_visual_count >= 2
+        
+        # Default: take screenshot (be safe)
+        return True
+
+
+    def check_if_task_complete(self) -> bool:
+        """Check if the task is complete based on actions taken."""
+        if not self._action_history:
+            return False
+        
+        # Don't check completion too early
+        if len(self._action_history) < 2:
+            return False
+        
+        try:
+            # Build action summary
+            recent_actions = self._action_history[-5:]  # Last 5 actions
+            action_summary = "\n".join([
+                f"- {a['name']}: {a.get('args', {})}" 
+                for a in recent_actions
+            ])
+            
+            completion_prompt = f"""
+Original task: {self._query}
+
+Actions taken:
+{action_summary}
+
+Is this task COMPLETE? Consider:
+- For writing tasks: Has the text been written/typed?
+- For navigation tasks: Have we reached the destination?
+- For search tasks: Have we found and displayed results?
+
+Respond with ONLY "YES" or "NO".
+"""
+            
+            response = self._client.models.generate_content(
+                model='gemini-2.0-flash-exp',
+                contents=completion_prompt
+            )
+            
+            result = response.text.strip().upper()
+            return "YES" in result
+            
+        except Exception as e:
+            logger.error(f"Completion check failed: {e}")
+            return False
+
+    def detect_repetitive_actions(self) -> tuple[bool, str]:
+        """Detect if agent is stuck in a loop and suggest alternatives.
+        
+        Returns:
+            (is_looping, suggestion) tuple
+        """
+        if len(self._action_history) < 4:
+            return False, ""
+        
+        # Check last 4 actions for repetition
+        recent_actions = self._action_history[-4:]
+        action_names = [a['name'] for a in recent_actions]
+        
+        # Detect exact repetition (same action 3+ times)
+        if len(set(action_names)) == 1:
+            repeated_action = action_names[0]
+            console.print(f"[yellow]⚠️ Detected loop: Repeating '{repeated_action}' action[/yellow]")
+            
+            suggestion = f"""
+You've been repeating the same action '{repeated_action}' multiple times.
+This suggests the current approach isn't working. Consider:
+1. Is the element you're targeting actually visible/clickable?
+2. Do you need to wait for something to load first?
+3. Should you try a different approach entirely?
+4. Is the task already complete?
+
+Try a DIFFERENT action or mark the task as DONE/FAIL.
+"""
+            return True, suggestion
+        
+        # Detect alternating pattern (A-B-A-B)
+        if len(recent_actions) >= 4:
+            if (action_names[0] == action_names[2] and 
+                action_names[1] == action_names[3] and
+                action_names[0] != action_names[1]):
+                console.print(f"[yellow]⚠️ Detected loop: Alternating between '{action_names[0]}' and '{action_names[1]}'[/yellow]")
+                
+                suggestion = f"""
+You're alternating between '{action_names[0]}' and '{action_names[1]}'.
+This pattern suggests you're stuck. Consider:
+1. Is there a prerequisite step you're missing?
+2. Do you need to interact with a different element first?
+3. Should you try a completely different strategy?
+
+Break the pattern with a NEW action.
+"""
+                return True, suggestion
+        
+        return False, ""
+
 
     def handle_action(self, action: types.FunctionCall) -> FunctionResponseT:
         """Handles the action and returns the environment state."""
@@ -264,6 +457,38 @@ class BrowserAgent:
         return ret
 
     def run_one_iteration(self) -> Literal["COMPLETE", "CONTINUE"]:
+        # Check for repetitive actions (trajectory reflection)
+        is_looping, reflection_msg = self.detect_repetitive_actions()
+        if is_looping:
+            # Add reflection as a user message to guide the model
+            self._contents.append(
+                Content(
+                    role="user",
+                    parts=[Part(text=f"REFLECTION: {reflection_msg}")]
+                )
+            )
+            # Clear plan if we're looping - need to replan
+            self._current_plan = []
+        
+        # Create a new plan if we don't have one (every ~5 iterations)
+        if not self._current_plan and self._iteration_count % 5 == 0:
+            current_state_desc = f"Iteration {self._iteration_count}, last action: {self._action_history[-1]['name'] if self._action_history else 'none'}"
+            self._current_plan = self.create_action_plan(current_state_desc)
+            
+            # Add plan as guidance to the model
+            if self._current_plan:
+                plan_text = "PLAN:\n" + "\n".join([
+                    f"{i+1}. {step['action']} - {step.get('reason', 'N/A')}"
+                    for i, step in enumerate(self._current_plan[:3])  # Show first 3 steps
+                ])
+                self._contents.append(
+                    Content(
+                        role="user",
+                        parts=[Part(text=plan_text)]
+                    )
+                )
+        
+        
         # Generate a response from the model.
         if self._verbose:
             with console.status(
@@ -427,6 +652,27 @@ class BrowserAgent:
                                 in PREDEFINED_COMPUTER_USE_FUNCTIONS
                             ):
                                 part.function_response.parts = None
+
+        # Track actions for completion detection
+        for function_call in function_calls:
+            self._action_history.append({
+                'name': function_call.name,
+                'args': dict(function_call.args) if function_call.args else {}
+            })
+        
+        # Increment iteration counter
+        self._iteration_count += 1
+        
+        # Check if we've hit the iteration limit
+        if self._iteration_count >= self._max_iterations:
+            console.print("[yellow]⚠️ Reached maximum iterations. Stopping.[/yellow]")
+            return "COMPLETE"
+        
+        # Check if task is complete (every 3 iterations to save API calls)
+        if self._iteration_count % 3 == 0 and self._iteration_count > 3:
+            if self.check_if_task_complete():
+                console.print("[green]✅ Task appears to be complete![/green]")
+                return "COMPLETE"
 
         return "CONTINUE"
 
