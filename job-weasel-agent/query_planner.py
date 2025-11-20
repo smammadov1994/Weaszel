@@ -74,6 +74,8 @@ CRITICAL RULES:
 - For flights, ask: origin, destination, dates
 - For shopping, ask: what to buy, budget constraints
 - For hotels, ask: location, dates, budget
+- For job applications, ask: job title, location. NOTE: Always plan to Login first if credentials are likely needed.
+- Avoid combining multiple search terms with "OR". Create sequential steps for different searches (e.g., "First search for X, then search for Y").
 
 Return your analysis as a JSON object with this structure:
 {{
@@ -169,11 +171,16 @@ The user provided these additional details:
 {json.dumps(clarifications, indent=2)}
 
 Create a comprehensive, step-by-step task instruction that:
-1. Specifies the exact website(s) to use (e.g., Google Flights, Amazon, LinkedIn)
-2. Includes all search parameters and filters from the clarifications
-3. Defines what information to extract or action to take
-4. Specifies the output format (e.g., "list top 5 options with price, rating, link")
-5. Handles edge cases (e.g., "if no results under budget, show closest options")
+1. Specifies the exact website(s) to use (e.g., Google Flights, Amazon, LinkedIn).
+2. **CRITICAL**: If the task involves applying, buying, posting, or searching for jobs, **Step 1 MUST be "Check if I am logged in. If not, log in."** (Use credentials from user data if available).
+3. Includes all search parameters and filters from the clarifications.
+4. **CRITICAL**: Do NOT use boolean "OR" operators in search queries (e.g., "React OR Python"). Instead, create **sequential** search steps: "First search for React, process results. Then clear search and search for Python, process results."
+5. Defines what information to extract or action to take.
+6. Specifies the output format.
+7. Handles edge cases:
+   - "If the page is blank or loading for >5s, reload the page."
+   - "If 'Easy Apply' is not available, skip or save for later."
+   - "If a captcha appears, try to solve it or switch to a different search engine/site."
 
 The instruction should be clear, actionable, and complete.
 

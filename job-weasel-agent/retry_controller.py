@@ -94,7 +94,7 @@ class RetryController:
             self.tracker.consecutive_same_goal_failures += 1
             self.tracker.failures_by_goal[self.tracker.current_goal] += 1
             
-            console.print(f"[dim]⚠️  Failure #{self.tracker.consecutive_same_goal_failures} on: {self.tracker.current_goal}[/dim]")
+            console.print(f"[dim red]⚠️  Failure #{self.tracker.consecutive_same_goal_failures} on: {self.tracker.current_goal}[/dim red]")
             
             # Check escalation thresholds
             if self.should_ask_user():
@@ -123,16 +123,16 @@ class RetryController:
         return any(keyword in eval_text.lower() for keyword in failure_keywords)
     
     def should_replan(self) -> bool:
-        """Trigger replanning after 5 consecutive failures on same goal"""
-        return self.tracker.consecutive_same_goal_failures >= 5 and not self.replanning_active
+        """Trigger replanning after 3 consecutive failures on same goal"""
+        return self.tracker.consecutive_same_goal_failures >= 3 and not self.replanning_active
     
     def should_switch_website(self) -> bool:
-        """Switch website after 10 consecutive failures on same goal"""
-        return self.tracker.consecutive_same_goal_failures >= 10
+        """Switch website after 6 consecutive failures on same goal"""
+        return self.tracker.consecutive_same_goal_failures >= 6
     
     def should_ask_user(self) -> bool:
-        """Ask user for help after 15 total failures"""
-        return self.tracker.total_failures >= 15
+        """Ask user for help after 10 total failures"""
+        return self.tracker.total_failures >= 10
     
     async def _replan_with_screenshot(self):
         """
@@ -150,8 +150,8 @@ class RetryController:
 I've failed 5 times in a row. Looking at this screenshot, what am I missing?
 
 Analyze:
-1. Are there dropdowns, modals, or UI elements I need to interact with first?
-2. Do I need to wait for something to load?
+1. Is the page blank, white, or stuck loading? (If so, suggest refreshing).
+2. Are there dropdowns, modals, or UI elements I need to interact with first?
 3. Are there pre-conditions I haven't met (login, selections, etc.)?
 4. Am I clicking the wrong element?
 
