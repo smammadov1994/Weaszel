@@ -9,6 +9,14 @@ export const metadata: Metadata = {
 
 const blogPosts = [
   {
+    slug: 'v2-release',
+    title: 'Weaszel 2.0: Faster, Simpler, Better',
+    description: 'We migrated to Browser-Use for 3-5x faster task completion, removed 2000+ lines of code, and achieved rock-solid reliability.',
+    date: 'November 20, 2024',
+    badge: '🚀 Major Release',
+    badgeColor: 'green',
+  },
+  {
     slug: 'desktop-control',
     title: 'Introducing Experimental Desktop Control',
     description: 'Learn about Weaszel\'s new experimental desktop control feature, its capabilities, limitations, and when to use it.',
@@ -62,11 +70,12 @@ export default function BlogIndexPage() {
               >
                 <div className="flex items-start justify-between mb-4">
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-bold ${
-                      post.badgeColor === 'yellow'
+                    className={`px-3 py-1 rounded-full text-xs font-bold ${post.badgeColor === 'yellow'
                         ? 'bg-amber-900/20 text-amber-500 border border-amber-800/30'
-                        : 'bg-amber-900/10 text-amber-500 border border-amber-800/30'
-                    }`}
+                        : post.badgeColor === 'green'
+                          ? 'bg-green-900/20 text-green-400 border border-green-800/30'
+                          : 'bg-amber-900/10 text-amber-500 border border-amber-800/30'
+                      }`}
                   >
                     {post.badge}
                   </span>

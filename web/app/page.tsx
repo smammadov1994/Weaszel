@@ -65,45 +65,67 @@ export default function LandingPage() {
             <Terminal className="w-6 h-6" />
             <span className="font-bold text-xl tracking-tighter text-stone-200">WEASZEL</span>
           </div>
-          
+
           <div className="flex items-center gap-6">
-             <div className="hidden md:flex gap-6 text-sm text-stone-400">
-                <a href="#features" className="hover:text-amber-500 transition-colors">Features</a>
-                <a href="/blog" className="hover:text-amber-500 transition-colors">Blog</a>
-                <a href="#install" className="hover:text-amber-500 transition-colors">Install</a>
-                <a href="#uninstall" className="hover:text-amber-500 transition-colors">Uninstall</a>
-             </div>
-             <a 
-               href="https://buymeacoffee.com/surfingcoin" 
-               target="_blank"
-               className="flex items-center gap-2 bg-[#3f3026] hover:bg-[#554134] text-amber-100 px-4 py-2 rounded-full text-sm font-bold transition-all border border-amber-900/30"
-             >
-               <Coffee className="w-4 h-4 text-amber-400" />
-               Buy me a coffee
-             </a>
+            <div className="hidden md:flex gap-6 text-sm text-stone-400">
+              <a href="#features" className="hover:text-amber-500 transition-colors">Features</a>
+              <a href="/blog" className="hover:text-amber-500 transition-colors">Blog</a>
+              <a href="#install" className="hover:text-amber-500 transition-colors">Install</a>
+              <a href="#uninstall" className="hover:text-amber-500 transition-colors">Uninstall</a>
+            </div>
+            <a
+              href="https://buymeacoffee.com/surfingcoin"
+              target="_blank"
+              className="flex items-center gap-2 bg-[#3f3026] hover:bg-[#554134] text-amber-100 px-4 py-2 rounded-full text-sm font-bold transition-all border border-amber-900/30"
+            >
+              <Coffee className="w-4 h-4 text-amber-400" />
+              Buy me a coffee
+            </a>
           </div>
         </div>
       </nav>
 
+      {/* V2 Floating Banner */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+        className="fixed top-20 right-6 z-40 hidden md:block"
+      >
+        <a
+          href="/blog/v2-release"
+          className="flex items-center gap-3 bg-gradient-to-r from-green-900/90 to-emerald-900/90 backdrop-blur-md border border-green-700/50 text-green-100 px-6 py-3 rounded-full shadow-2xl shadow-green-900/30 hover:shadow-green-900/50 transition-all hover:scale-105"
+        >
+          <span className="text-2xl animate-bounce">🚀</span>
+          <div className="flex flex-col">
+            <span className="text-sm font-bold">Weaszel 2.0 is here!</span>
+            <span className="text-xs text-green-300">3-5x faster →</span>
+          </div>
+        </a>
+      </motion.div>
+
       {/* Hero Section */}
       <section className="pt-32 pb-20 px-6">
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <div className="inline-block px-3 py-1 border border-amber-800/30 rounded-full bg-amber-900/10 text-amber-500 text-xs mb-6 font-bold">
-              🌰 v1.0.0 Released
-            </div>
+            <a
+              href="/blog/v2-release"
+              className="inline-block px-3 py-1 border border-green-800/30 rounded-full bg-green-900/10 text-green-400 text-xs mb-6 font-bold hover:bg-green-900/20 transition-colors"
+            >
+              🚀 v2.0.0 Released - 3-5x Faster!
+            </a>
             <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-6 text-stone-100">
-              Your Cozy <br/>
+              Your Cozy <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-600">AI Companion.</span>
             </h1>
             <p className="text-xl text-stone-400 mb-8 max-w-lg">
               Weaszel lives in your terminal and surfs the web for you. From research to shopping, it handles the boring stuff so you can relax.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-4">
               <a href="#install" className="flex items-center justify-center gap-2 bg-amber-700 hover:bg-amber-600 text-white px-8 py-4 rounded-lg font-bold transition-all shadow-lg shadow-amber-900/20">
                 <Download className="w-5 h-5" />
@@ -116,7 +138,7 @@ export default function LandingPage() {
           </motion.div>
 
           {/* Terminal Demo */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
@@ -189,19 +211,19 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl font-bold mb-8 text-stone-100">Invite Weaszel into your terminal.</h2>
           <p className="text-stone-400 mb-12">One command to get started.</p>
-          
+
           <div className="bg-[#0c0a09] border border-stone-800 rounded-xl p-6 flex items-center justify-between max-w-2xl mx-auto group hover:border-amber-700/50 transition-all shadow-2xl">
             <code className="text-amber-500 font-mono text-sm md:text-base">
               curl -sL https://weaszel.com/install.sh | bash
             </code>
-            <button 
+            <button
               onClick={copyCommand}
               className="ml-4 p-2 hover:bg-stone-800 rounded-lg transition-colors text-stone-500 hover:text-stone-300"
             >
               {copied ? <Check className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5" />}
             </button>
           </div>
-          
+
           <div className="mt-12 flex flex-col items-center gap-4">
             <p className="text-sm text-stone-500">Requires Python 3.10+ and Chrome</p>
             <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-amber-600 hover:text-amber-500 hover:underline text-sm transition-colors">
@@ -216,14 +238,14 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4 text-stone-100">Need to uninstall?</h2>
           <p className="text-stone-400 mb-8">No hard feelings. Here's how to cleanly remove Weaszel.</p>
-          
+
           <div className="bg-[#0c0a09] border border-stone-800 rounded-xl p-6 max-w-2xl mx-auto group hover:border-red-700/50 transition-all shadow-2xl">
             <code className="text-red-400 font-mono text-sm md:text-base block text-left">
-              rm -rf ~/.weaszel<br/>
-              sed -i '' '/alias weaszel/d' ~/.zshrc<br/>
+              rm -rf ~/.weaszel<br />
+              sed -i '' '/alias weaszel/d' ~/.zshrc<br />
               source ~/.zshrc
             </code>
-            <button 
+            <button
               onClick={() => {
                 navigator.clipboard.writeText("rm -rf ~/.weaszel\nsed -i '' '/alias weaszel/d' ~/.zshrc\nsource ~/.zshrc");
                 setCopied(true);

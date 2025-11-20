@@ -1,0 +1,15 @@
+[project]
+name = "weaszel"
+version = "2.0.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "browser-use>=0.9.7",
+    "browserbase>=1.4.0",
+    "langchain-google-genai>=3.1.0",
+    "loguru>=0.7.3",
+    "playwright>=1.56.0",
+    "python-dotenv>=1.2.1",
+    "termcolor>=3.2.0",
+]
