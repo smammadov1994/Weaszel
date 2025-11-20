@@ -159,6 +159,9 @@ def validate_query_with_gemini(query: str, api_key: str) -> bool:
 def main():
     print_welcome()
 
+    # Define env file path
+    env_file = os.path.join(os.path.dirname(__file__), '.env.local')
+
     # Check API Key
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
@@ -167,7 +170,6 @@ def main():
         api_key = Prompt.ask("[bold green]Enter your Gemini API Key[/bold green]", password=True)
         
         # Save to .env.local for persistence
-        env_file = os.path.join(os.path.dirname(__file__), '.env.local')
         with open(env_file, 'w') as f:
             f.write(f'GEMINI_API_KEY={api_key}\n')
         
@@ -179,41 +181,41 @@ def main():
     if user_data:
         console.print("[green]✅ User profile loaded from user_data.md[/green]")
 
-    # Check Experimental Desktop Flag
-    desktop_enabled = os.getenv("EXPERIMENTAL_DESKTOP_ENABLED", "").lower() == "true"
+    # Check for Experimental Desktop Flag
+    desktop_enabled_str = os.environ.get("EXPERIMENTAL_DESKTOP_ENABLED")
     
-    if "EXPERIMENTAL_DESKTOP_ENABLED" not in os.environ:
-        console.print("\n[bold yellow]🆕 Experimental Feature: Desktop Control[/bold yellow]")
-        console.print("Weaszel can now control your local desktop (open apps, manage files, etc).")
-        console.print("This requires granting macOS permissions to your terminal.")
+    if desktop_enabled_str is None:
+        console.print(Panel.fit(
+            "[bold cyan]Welcome to Weaszel Setup![/bold cyan]\n\n"
+            "Please select your operation mode:\n\n"
+            "[bold green]1. Browser Automation (Recommended)[/bold green]\n"
+            "   - Stable, fast, and safe.\n"
+            "   - Best for web research, job applications, and data gathering.\n\n"
+            "[bold yellow]2. Full Desktop Control (Experimental)[/bold yellow]\n"
+            "   - Can control your mouse and keyboard.\n"
+            "   - [red]Warning:[/red] Can be flaky and requires extra permissions.\n"
+            "   - Use only if you need to control local apps (e.g. TextEdit, VS Code).",
+            title="[bold magenta]Configuration[/bold magenta]"
+        ))
         
-        if Prompt.ask("Do you want to enable Desktop Control?", choices=["y", "n"], default="n") == "y":
-            # Show Permissions Guide
-            permissions_guide = """
-[bold white]To use Desktop Control, you must grant permissions to your Terminal app:[/bold white]
-
-1. [bold cyan]Screen Recording[/bold cyan] (to see your screen)
-   • System Settings -> Privacy & Security -> Screen Recording
-   • Toggle ON for [yellow]Terminal[/yellow] (or iTerm/VSCode)
-
-2. [bold cyan]Accessibility[/bold cyan] (to control mouse/keyboard)
-   • System Settings -> Privacy & Security -> Accessibility
-   • Toggle ON for [yellow]Terminal[/yellow] (or iTerm/VSCode)
-
-[dim]You may need to restart your terminal after enabling these.[/dim]
-            """
-            console.print(Panel(permissions_guide, title="[bold red]⚠️  Required Permissions[/bold red]", border_style="red"))
+        mode_choice = Prompt.ask("[bold]Select Mode[/bold]", choices=["1", "2"], default="1")
+        
+        if mode_choice == "2":
+            # Desktop Mode Flow
+            console.print("\n[bold yellow]⚠️  Enabling Experimental Desktop Control[/bold yellow]")
+            console.print("You must grant [bold]Screen Recording[/bold] and [bold]Accessibility[/bold] permissions to your terminal.")
+            console.print("1. Open System Settings -> Privacy & Security")
+            console.print("2. Enable permissions for Terminal/iTerm/VSCode")
+            console.print("3. Restart your terminal if needed.\n")
             
-            if Prompt.ask("[bold white]Have you granted these permissions?[/bold white]", choices=["y", "n"]) == "y":
-                desktop_enabled = True
-                # Save to .env.local
-                with open(env_file, 'a') as f:
-                    f.write('\nEXPERIMENTAL_DESKTOP_ENABLED=true\n')
-                console.print("[green]✅ Desktop Control Enabled![/green]")
+            if Prompt.ask("Are you ready to proceed?", choices=["y", "n"], default="y") == "y":
+                set_key(env_file, "EXPERIMENTAL_DESKTOP_ENABLED", "true")
+                os.environ["EXPERIMENTAL_DESKTOP_ENABLED"] = "true"
+                console.print("[green]Desktop Control Enabled![/green]")
             else:
-                console.print("[yellow]Skipping Desktop Control for now.[/yellow]")
-                with open(env_file, 'a') as f:
-                    f.write('\nEXPERIMENTAL_DESKTOP_ENABLED=false\n')
+                set_key(env_file, "EXPERIMENTAL_DESKTOP_ENABLED", "false")
+                os.environ["EXPERIMENTAL_DESKTOP_ENABLED"] = "false"
+                console.print("[green]Falling back to Browser Mode.[/green]")
         else:
             with open(env_file, 'a') as f:
                 f.write('\nEXPERIMENTAL_DESKTOP_ENABLED=false\n')
