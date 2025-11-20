@@ -102,6 +102,58 @@ def print_welcome():
     console.print(Align.center(examples_table))
     console.print(Align.center(Text("\n[dim]Powered by Google Gemini Computer Use[/dim]\n")))
 
+from google import genai
+
+def validate_query_with_gemini(query: str, api_key: str) -> bool:
+    """
+    Asks Gemini if the query makes sense.
+    Returns True if valid, False otherwise.
+    """
+    # Fail fast on empty
+    if not query or not query.strip():
+        return False
+
+    try:
+        client = genai.Client(api_key=api_key, http_options={'api_version': 'v1alpha'})
+        
+        prompt = f"""
+        You are a query validator for an AI agent.
+        The user has input the following query: "{query}"
+        
+        Does this query make sense as a task for an AI agent to perform on a computer?
+        It should be a clear instruction or question.
+        
+        Examples of INVALID queries:
+        - "asdasd" (random gibberish)
+        - "do" (incomplete command)
+        - "nothing" (no action)
+        - "hello" (just a greeting, not a task - though borderline, usually invalid for a task agent)
+        - "" (empty)
+        
+        Examples of VALID queries:
+        - "Find me a flight to Tokyo"
+        - "Open notepad and write a poem"
+        - "Check the weather"
+        - "Go to google.com"
+        
+        Respond with ONLY "VALID" or "INVALID".
+        """
+        
+        response = client.models.generate_content(
+            model='gemini-2.0-flash-exp',
+            contents=prompt
+        )
+        result = response.text.strip().upper()
+        
+        if "INVALID" in result:
+            return False
+        return True
+        
+    except Exception as e:
+        logger.error(f"Validation failed: {e}")
+        # If validation fails (e.g. network), assume valid to not block user
+        return True
+
 def main():
     print_welcome()
 
@@ -135,19 +187,13 @@ def main():
 
         if query.lower() in ['exit', 'quit']:
             break
-
-        if not query.strip():
-            console.print("[yellow]⚠️  Please enter a task for me to do.[/yellow]")
-            continue
-
-        # Validate the task
-        with console.status("[dim]🤔 Validating task...[/dim]", spinner="dots"):
-            from agent import validate_task
-            validation = validate_task(query, model_name='gemini-2.5-computer-use-preview-10-2025')
-        
-        if not validation.get("valid", True):
-            console.print(f"[red]❌ I don't understand that task.[/red]")
-            console.print(f"[dim]Reason: {validation.get('reason', 'Unknown')}[/dim]")
+            
+        # Validate Query
+        with console.status("[bold green]🧠 Evaluating query...[/bold green]"):
+            is_valid = validate_query_with_gemini(query, api_key)
+            
+        if not is_valid:
+            console.print(Panel(f"[bold red]😕 I didn't understand that task.[/bold red]\n\nYour query [italic]'{query}'[/italic] doesn't seem like a clear instruction.\nPlease try again with a specific task like:\n- [cyan]\"Find a flight to Paris\"[/cyan]\n- [cyan]\"Open TextEdit and write a note\"[/cyan]", title="Invalid Query", border_style="red"))
             continue
 
         # Augment query with user data

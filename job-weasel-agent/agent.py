@@ -60,51 +60,6 @@ def multiply_numbers(x: float, y: float) -> dict:
     return {"result": x * y}
 
 
-def validate_task(query: str, model_name: str) -> dict:
-    """Validates if the user query is a valid task."""
-    client = genai.Client(
-        api_key=os.environ.get("GEMINI_API_KEY"),
-        vertexai=os.environ.get("USE_VERTEXAI", "0").lower() in ["true", "1"],
-        project=os.environ.get("VERTEXAI_PROJECT"),
-        location=os.environ.get("VERTEXAI_LOCATION"),
-    )
-    
-    prompt = f"""
-    You are a smart validator for an AI agent. The user sent this command: '{query}'.
-    
-    Determine if this is a valid, actionable task for a computer agent.
-    
-    Return valid=False if:
-    - The input is "do nothing", "no", "stop", or similar refusals.
-    - The input is gibberish or random characters.
-    - The input is too vague or lacks enough information to even start (e.g. just saying "search" without saying what).
-    - The input makes no sense in the context of a computer agent.
-    
-    Return valid=True if:
-    - It is a clear instruction, question, or request for help.
-    - It is a task that can be attempted, even if complex.
-    
-    Return ONLY a JSON object with keys: 
-    - "valid" (boolean)
-    - "reason" (string): A short, helpful message explaining WHY it's invalid, to be shown to the user. If valid, this can be empty.
-    """
-    
-    try:
-        response = client.models.generate_content(
-            model=model_name,
-            contents=prompt,
-            config=GenerateContentConfig(
-                response_mime_type="application/json",
-                temperature=0.1
-            )
-        )
-        import json
-        return json.loads(response.text)
-    except Exception as e:
-        # If validation fails, assume valid to be safe, but log it
-        print(f"Validation error: {e}")
-        return {"valid": True, "reason": "Validation failed, proceeding anyway."}
-
 class BrowserAgent:
     def __init__(
         self,
