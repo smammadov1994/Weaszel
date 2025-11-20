@@ -58,7 +58,13 @@ fi
 sed -i '' '/alias weaszel/d' "$SHELL_CONFIG" 2>/dev/null || sed -i '/alias weaszel/d' "$SHELL_CONFIG"
 
 # Add new alias
-echo "alias weaszel='cd $INSTALL_DIR && uv run python job-weasel-agent/weasel.py'" >> "$SHELL_CONFIG"
+# Use full path to uv if possible, or assume it's in path
+UV_BIN="$HOME/.cargo/bin/uv"
+if [ -f "$UV_BIN" ]; then
+    echo "alias weaszel='cd $INSTALL_DIR && $UV_BIN run python job-weasel-agent/weasel.py'" >> "$SHELL_CONFIG"
+else
+    echo "alias weaszel='cd $INSTALL_DIR && uv run python job-weasel-agent/weasel.py'" >> "$SHELL_CONFIG"
+fi
 
 echo -e "\n${GREEN}✅ Weaszel 2.0 Installation Complete!${NC}"
 echo -e "Restart your terminal or run 'source $SHELL_CONFIG'"
