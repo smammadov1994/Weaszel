@@ -1,6 +1,10 @@
 import os
 import sys
 import time
+
+# Add current directory to path so imports work - MUST BE BEFORE LOCAL IMPORTS
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Prompt
@@ -16,11 +20,9 @@ load_dotenv() # Also try .env just in case
 # Configure Logging
 logger.add("weasel.log", rotation="10 MB", level="DEBUG")
 
-# Add current directory to path so imports work
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
 from legacy_agent import BrowserAgent as LegacyBrowserAgent
 from browser_agent import BrowserAgent
+from query_planner import QueryPlanner
 
 
 console = Console()
@@ -75,7 +77,7 @@ def print_welcome():
     # Compact panel with just title and version
     subtitle = Text("🦊 Your AI Agent for the Web.", style="italic cyan")
     version_table = Table(show_header=False, box=None)
-    version_table.add_row("[bold green]Version:[/bold green] 2.0.0", "[bold blue]Engine:[/bold blue] Browser-Use + Gemini 2.0")
+    version_table.add_row("[bold green]Version:[/bold green] 2.0.0", "[bold blue]Engine:[/bold blue] Browser-Use + Gemini 2.5 Flash")
     
     panel_content = Group(
         Align.center(subtitle),
@@ -319,14 +321,30 @@ def main():
 
             # Initialize Environment (only if browser was requested)
             if browser_initialized:
-                # V2: Use Browser-Use Framework
+                # V2: Use Browser-Use Framework with Query Planner
                 
-                # Determine model to use - prefer standard gemini models for browser-use
-                # as they are better optimized for text-based reasoning than the computer-use model
-                model_name = 'gemini-2.0-flash-exp'
+                # Step 1: Plan the query (analyze, clarify, enhance)
+                enhanced_query = full_query  # Default to original
+                task_type = "general"  # Default task type
+                try:
+                    console.print("[dim]🧠 Planning your task...[/dim]")
+                    planner = QueryPlanner()
+                    enhanced_query, task_type = planner.plan(full_query)
+                    console.print("[green]✓ Planning complete![/green]\n")
+                except Exception as e:
+                    console.print(f"[yellow]⚠️  Query planner failed: {type(e).__name__}: {str(e)}[/yellow]")
+                    console.print("[dim]→ Using original query instead...[/dim]\n")
+                    # Print traceback for debugging
+                    import traceback
+                    logger.error(f"Query planner error: {traceback.format_exc()}")
                 
-                agent = BrowserAgent(model_name=model_name, headless=False)
-                agent.run_sync(full_query)
+                # Step 2: Execute with enhanced query and retry logic
+                # Use gemini-2.5-flash - stable model optimized for agentic use cases
+                # with higher rate limits and built-in thinking capability
+                model_name = 'gemini-2.5-flash'
+                
+                agent = BrowserAgent(model_name=model_name, headless=False, task_type=task_type)
+                agent.run_sync(enhanced_query)
                 
             else:
                 # Desktop-only mode - use desktop computer (Legacy)
