@@ -217,8 +217,13 @@ def main():
                 os.environ["EXPERIMENTAL_DESKTOP_ENABLED"] = "false"
                 console.print("[green]Falling back to Browser Mode.[/green]")
         else:
-            with open(env_file, 'a') as f:
-                f.write('\nEXPERIMENTAL_DESKTOP_ENABLED=false\n')
+            # Browser Mode (Default)
+            set_key(env_file, "EXPERIMENTAL_DESKTOP_ENABLED", "false")
+            os.environ["EXPERIMENTAL_DESKTOP_ENABLED"] = "false"
+            console.print("[green]Browser Automation Mode Configured![/green]")
+    
+    # Convert to boolean
+    desktop_enabled = os.environ.get("EXPERIMENTAL_DESKTOP_ENABLED", "false").lower() == "true"
     
     if desktop_enabled:
         console.print("[bold yellow]⚠️  Experimental Desktop Control Active[/bold yellow]")
