@@ -26,7 +26,7 @@ export default function ChangelogPage() {
           {/* Header */}
           <div className="mb-16">
             <h1 className="text-4xl md:text-5xl font-bold text-stone-100 mb-4">
-              📝 Changelog
+              🌰 Changelog
             </h1>
             <p className="text-xl text-stone-400">
               Track the evolution of Weaszel

@@ -45,7 +45,7 @@ export default function BlogIndexPage() {
           {/* Header */}
           <div className="mb-16">
             <h1 className="text-4xl md:text-5xl font-bold text-stone-100 mb-4">
-              📝 Blog
+              🌰 Blog
             </h1>
             <p className="text-xl text-stone-400">
               Thoughts, updates, and insights about AI agents
