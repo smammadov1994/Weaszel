@@ -179,6 +179,48 @@ def main():
     if user_data:
         console.print("[green]✅ User profile loaded from user_data.md[/green]")
 
+    # Check Experimental Desktop Flag
+    desktop_enabled = os.getenv("EXPERIMENTAL_DESKTOP_ENABLED", "").lower() == "true"
+    
+    if "EXPERIMENTAL_DESKTOP_ENABLED" not in os.environ:
+        console.print("\n[bold yellow]🆕 Experimental Feature: Desktop Control[/bold yellow]")
+        console.print("Weaszel can now control your local desktop (open apps, manage files, etc).")
+        console.print("This requires granting macOS permissions to your terminal.")
+        
+        if Prompt.ask("Do you want to enable Desktop Control?", choices=["y", "n"], default="n") == "y":
+            # Show Permissions Guide
+            permissions_guide = """
+[bold white]To use Desktop Control, you must grant permissions to your Terminal app:[/bold white]
+
+1. [bold cyan]Screen Recording[/bold cyan] (to see your screen)
+   • System Settings -> Privacy & Security -> Screen Recording
+   • Toggle ON for [yellow]Terminal[/yellow] (or iTerm/VSCode)
+
+2. [bold cyan]Accessibility[/bold cyan] (to control mouse/keyboard)
+   • System Settings -> Privacy & Security -> Accessibility
+   • Toggle ON for [yellow]Terminal[/yellow] (or iTerm/VSCode)
+
+[dim]You may need to restart your terminal after enabling these.[/dim]
+            """
+            console.print(Panel(permissions_guide, title="[bold red]⚠️  Required Permissions[/bold red]", border_style="red"))
+            
+            if Prompt.ask("[bold white]Have you granted these permissions?[/bold white]", choices=["y", "n"]) == "y":
+                desktop_enabled = True
+                # Save to .env.local
+                with open(env_file, 'a') as f:
+                    f.write('\nEXPERIMENTAL_DESKTOP_ENABLED=true\n')
+                console.print("[green]✅ Desktop Control Enabled![/green]")
+            else:
+                console.print("[yellow]Skipping Desktop Control for now.[/yellow]")
+                with open(env_file, 'a') as f:
+                    f.write('\nEXPERIMENTAL_DESKTOP_ENABLED=false\n')
+        else:
+            with open(env_file, 'a') as f:
+                f.write('\nEXPERIMENTAL_DESKTOP_ENABLED=false\n')
+    
+    if desktop_enabled:
+        console.print("[bold yellow]⚠️  Experimental Desktop Control Active[/bold yellow]")
+
     # Main loop - ask for task first!
     browser_initialized = False
     browser_choice = None
@@ -248,6 +290,18 @@ def main():
                         'go to', '.com', '.org', 'http'
                     ])
                 
+                # Enforce Desktop Flag
+                if not needs_browser and not desktop_enabled:
+                    console.print("[yellow]⚠️  Desktop Control is disabled.[/yellow]")
+                    console.print("I can only perform browser tasks right now.")
+                    console.print("To enable desktop control, delete [bold]EXPERIMENTAL_DESKTOP_ENABLED[/bold] from .env.local and restart.")
+                    
+                    # Force browser or ask again? Let's force browser as fallback or just continue loop
+                    if Prompt.ask("Do you want to try this in the browser instead?", choices=["y", "n"]) == "y":
+                        needs_browser = True
+                    else:
+                        continue
+
                 if needs_browser:
                     console.print("\n[bold cyan]This task requires a browser. Which one should I use?[/bold cyan]")
                     console.print("[1] [bold white]Standard Chromium[/bold white] (Easiest, but might be detected)")
