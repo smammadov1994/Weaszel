@@ -74,7 +74,7 @@ def print_welcome():
     # Compact panel with just title and version
     subtitle = Text("🦊 Your AI Agent for the Web.", style="italic cyan")
     version_table = Table(show_header=False, box=None)
-    version_table.add_row("[bold green]Version:[/bold green] 1.0.0", "[bold blue]Engine:[/bold blue] Gemini 2.5 Computer Use")
+    version_table.add_row("[bold green]Version:[/bold green] 1.1.0", "[bold blue]Engine:[/bold blue] Gemini 2.5 Computer Use")
     
     panel_content = Group(
         Align.center(subtitle),
