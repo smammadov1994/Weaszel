@@ -382,8 +382,10 @@ class BrowserAgent:
                     )
                 )
             elif isinstance(fc_result, dict):
+                # Merge extra fields (like safety_acknowledgement) into the result
+                response_data = {**fc_result, **extra_fr_fields}
                 function_responses.append(
-                    FunctionResponse(name=function_call.name, response=fc_result)
+                    FunctionResponse(name=function_call.name, response=response_data)
                 )
 
         self._contents.append(
