@@ -140,6 +140,16 @@ def main():
             console.print("[yellow]⚠️  Please enter a task for me to do.[/yellow]")
             continue
 
+        # Validate the task
+        with console.status("[dim]🤔 Validating task...[/dim]", spinner="dots"):
+            from agent import validate_task
+            validation = validate_task(query, model_name='gemini-2.5-computer-use-preview-10-2025')
+        
+        if not validation.get("valid", True):
+            console.print(f"[red]❌ I don't understand that task.[/red]")
+            console.print(f"[dim]Reason: {validation.get('reason', 'Unknown')}[/dim]")
+            continue
+
         # Augment query with user data
         full_query = query
         if user_data:
