@@ -85,11 +85,46 @@ class BrowserAgent:
             project=os.environ.get("VERTEXAI_PROJECT"),
             location=os.environ.get("VERTEXAI_LOCATION"),
         )
+        
+        # Get screen size for system prompt
+        screen_width, screen_height = self._browser_computer.screen_size()
+        
+        # Comprehensive system prompt (inspired by Claude Computer Use)
+        system_prompt = f"""You are an AI agent controlling a computer to complete user tasks.
+
+ENVIRONMENT:
+- Screen resolution: {screen_width}x{screen_height}
+- You interact via mouse clicks, typing, and keyboard shortcuts
+- You can take screenshots to observe the current state
+
+IMPORTANT GUIDELINES:
+1. ALWAYS take a screenshot BEFORE clicking to verify element positions
+2. Click on the CENTER of elements, not edges or corners
+3. Wait for applications to load - take another screenshot if needed
+4. If a click fails, adjust cursor position and retry
+5. After EACH action, verify it succeeded before proceeding
+
+COMMON MISTAKES TO AVOID:
+- Clicking too quickly before elements load
+- Clicking on wrong coordinates
+- Not verifying action success
+- Repeating failed actions without adjustment
+
+ACTION VERIFICATION:
+After each action, ask yourself:
+- Did the action succeed?
+- Is the application/page loaded?
+- Do I need to retry with different coordinates?
+
+Your goal: {self._query}
+
+Think step-by-step and verify each action before proceeding."""
+
         self._contents: list[Content] = [
             Content(
                 role="user",
                 parts=[
-                    Part(text=self._query),
+                    Part(text=system_prompt),
                 ],
             )
         ]
@@ -139,6 +174,11 @@ class BrowserAgent:
         # Hierarchical planning state
         self._current_plan = []  # Queue of planned actions
         self._plan_context = ""  # Context from last planning session
+        
+        # Action retry tracking (inspired by Claude)
+        self._last_action = None
+        self._last_action_retry_count = 0
+        self._max_retries_per_action = 2
 
     def create_action_plan(self, current_state: str) -> list[dict]:
         """Create a multi-step action plan using Gemini Flash.
@@ -222,6 +262,51 @@ Be specific and actionable. Focus on the NEXT steps, not the entire task.
         
         # Default: take screenshot (be safe)
         return True
+
+    def evaluate_action_success(self, action_name: str, action_args: dict) -> tuple[bool, str]:
+        """Evaluate if the last action succeeded using Gemini Flash.
+        
+        Returns:
+            (success: bool, feedback: str)
+        """
+        try:
+            # Get recent context
+            recent_actions = self._action_history[-3:] if len(self._action_history) >= 3 else self._action_history
+            
+            eval_prompt = f"""You just performed this action:
+Action: {action_name}
+Arguments: {action_args}
+
+Recent action history: {recent_actions}
+
+Based on the current screenshot and context, did this action succeed?
+
+Answer with ONLY:
+SUCCESS - if the action clearly worked as intended
+FAILED - if the action clearly failed or had no effect
+UNCERTAIN - if you can't tell yet (need to wait/observe more)
+
+Then briefly explain why (one sentence).
+
+Format: STATUS: explanation"""
+
+            response = self._client.models.generate_content(
+                model='gemini-2.0-flash-exp',
+                contents=eval_prompt
+            )
+            
+            result_text = response.text.strip().upper()
+            
+            if "SUCCESS" in result_text:
+                return True, result_text
+            elif "FAILED" in result_text:
+                return False, result_text
+            else:  # UNCERTAIN
+                return True, result_text  # Assume success if uncertain
+                
+        except Exception as e:
+            logger.error(f"Action evaluation failed: {e}")
+            return True, "Evaluation failed, assuming success"
 
 
     def check_if_task_complete(self) -> bool:
@@ -659,6 +744,53 @@ Break the pattern with a NEW action.
                 'name': function_call.name,
                 'args': dict(function_call.args) if function_call.args else {}
             })
+        
+        # Self-evaluate the last action (inspired by Claude)
+        if function_calls and len(function_calls) > 0:
+            last_call = function_calls[-1]
+            action_name = last_call.name
+            action_args = dict(last_call.args) if last_call.args else {}
+            
+            # Check if this is a retry of the same action
+            if self._last_action == (action_name, str(action_args)):
+                self._last_action_retry_count += 1
+            else:
+                self._last_action = (action_name, str(action_args))
+                self._last_action_retry_count = 0
+            
+            # Evaluate action success (skip for screenshot actions)
+            if action_name not in ['screenshot', 'cursor_position']:
+                success, feedback = self.evaluate_action_success(action_name, action_args)
+                
+                if not success and self._last_action_retry_count < self._max_retries_per_action:
+                    console.print(f"[yellow]⚠️ Action failed: {feedback}[/yellow]")
+                    console.print(f"[yellow]🔄 Retry {self._last_action_retry_count + 1}/{self._max_retries_per_action}[/yellow]")
+                    
+                    # Add retry guidance to the model
+                    retry_msg = f"""
+RETRY NEEDED: The last action '{action_name}' failed.
+Feedback: {feedback}
+
+Suggestions:
+1. Try clicking a slightly different position (adjust coordinates)
+2. Wait a moment for the element to load
+3. Take a screenshot to verify the element is visible
+4. Try a different approach if this keeps failing
+
+Please retry with adjustments."""
+                    
+                    self._contents.append(
+                        Content(
+                            role="user",
+                            parts=[Part(text=retry_msg)]
+                        )
+                    )
+                elif not success:
+                    console.print(f"[red]❌ Action failed after {self._max_retries_per_action} retries[/red]")
+                    # Reset retry counter and continue
+                    self._last_action_retry_count = 0
+                else:
+                    console.print(f"[green]✓ Action succeeded: {action_name}[/green]")
         
         # Increment iteration counter
         self._iteration_count += 1
