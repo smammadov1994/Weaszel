@@ -1,77 +1,78 @@
-# 🌰 Weaszel
+# Weaszel 2.0 🦊
 
-> **Your Cozy AI Companion for the Web.**
->
-> Weaszel lives in your terminal and surfs the web for you. From research to shopping, it handles the boring stuff so you can relax.
+**Your Cozy AI Companion for Web Automation**
 
-![Weaszel Screenshot](assets/screenshot.png)
+Weaszel is a powerful, local-first AI agent that automates web tasks using natural language. Built with [Browser-Use](https://github.com/browser-use/browser-use) and Google Gemini 2.0.
 
-## 🚀 Features
+## ✨ What's New in 2.0
 
-- **🦊 Stealth Mode:** Connects to your existing Chrome browser to bypass Cloudflare, Captchas, and bot detection effortlessly.
-- **🧠 Gemini Powered:** Uses Google's latest `gemini-2.5-computer-use-preview` model to "see" and interact with the web.
-- **⚡ Rapid Fire:** Automates repetitive tasks like job applications, form filling, and data entry.
-- **🛡️ Full Control:** You own the agent. No hidden limits, no "safety" blocks on booking flights. It runs locally on your machine.
+- ⚡ **3-5x faster** task completion with Browser-Use framework
+- 🧹 **Removed 2000+ lines** of complex browser control code
+- 🛡️ **Built-in retry logic** and error recovery
+- 🧠 **Gemini 2.0 Flash** optimized for speed and reliability
 
-## 🛠️ Architecture
-
-Weaszel uses a "Human-in-the-Loop" architecture powered by Google Gemini and Playwright.
-
-![Architecture Diagram](assets/architecture.png)
-
-1.  **Capture:** The agent takes a screenshot of your browser.
-2.  **Analyze:** Gemini analyzes the screen and decides the next action (click, type, scroll).
-3.  **Execute:** Playwright executes the action in your browser.
-4.  **Repeat:** The loop continues until the task is done.
-
-## 📦 Installation
-
-You can install Weaszel with a single command:
+## 🚀 Quick Start
 
 ```bash
 curl -sL https://weaszel.com/install.sh | bash
 ```
 
-Or manually:
+Then restart your terminal and run:
+```bash
+weaszel
+```
 
-1.  Clone the repo:
-    ```bash
-    git clone https://github.com/smammadov1994/Weaszel.git
-    cd Weaszel/job-weasel-agent
-    ```
+## 💡 What Can It Do?
 
-2.  Install dependencies:
-    ```bash
-    python3 -m venv venv
-    source venv/bin/activate
-    pip install -r requirements.txt
-    playwright install chromium
-    ```
+- 🔍 **Research**: "Find the latest AI news on TechCrunch"
+- 🛒 **Shopping**: "Find a mechanical keyboard on Amazon under $100"
+- ✈️ **Travel**: "Search for flights to Tokyo on Kayak"
+- 📝 **Job Applications**: "Apply to software engineer jobs in NYC"
+- 🌐 **Any Web Task**: Just ask!
 
-3.  Run it:
-    ```bash
-    python weasel.py
-    ```
+## 🏗️ Architecture
 
-## 🔑 Setup
+Weaszel 2.0 uses a hybrid architecture:
+- **Browser Tasks** (Default): Powered by Browser-Use + Gemini 2.0 Flash
+- **Desktop Tasks** (Opt-in): Legacy implementation for local app control
 
-1.  **Get a Gemini API Key:** [Google AI Studio](https://aistudio.google.com/app/apikey)
-2.  **Launch Chrome (Optional):** For Stealth Mode, launch your Chrome with remote debugging:
-    ```bash
-    ./start_chrome.sh
-    ```
-3.  **Start Weaszel:** Follow the on-screen instructions to connect.
+## 📋 Requirements
 
-## 🤝 Contributing
+- Python 3.12+
+- macOS, Linux, or Windows
+- Gemini API Key ([get one here](https://aistudio.google.com/app/apikey))
 
-Weaszel is open source! Feel free to open issues or submit PRs.
+## 🔧 Manual Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/smammadov1994/Weaszel.git
+cd Weaszel
+
+# Install dependencies
+uv sync
+
+# Install browser
+uv run playwright install chromium
+
+# Run Weaszel
+uv run python job-weasel-agent/weasel.py
+```
+
+## 🌐 Learn More
+
+- [Blog: Weaszel 2.0 Release](https://weaszel.com/blog/v2-release)
+- [Documentation](https://weaszel.com)
+- [GitHub](https://github.com/smammadov1994/Weaszel)
 
 ## ☕ Support
 
-If Weaszel helps you save time (or land a job!), consider buying me a coffee.
+If Weaszel helps you save time, consider [buying me a coffee](https://buymeacoffee.com/surfingcoin)!
 
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/surfingcoin)
+## 📜 License
+
+Apache 2.0 - See [LICENSE](LICENSE)
 
 ---
 
-*Built with ❤️ by Seymur.*
+*Built with 🌰 by Seymur*

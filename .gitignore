@@ -70,3 +70,9 @@ weasel.log
 job-weasel-agent/.env
 job-weasel-agent/.env.local
 job-weasel-agent/venv/
+browser-use/
+test_v2.py
+main.py
+logs/
+.venv/
+uv.lock

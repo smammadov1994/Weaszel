@@ -1,163 +1,98 @@
-# Computer Use Preview
+# Weaszel - AI Agent for Web Automation
+
+**Powered by Google Gemini & Browser-Use**
 
 ## Quick Start
-
-This section will guide you through setting up and running the Computer Use Preview model, either the Gemini Developer API or Vertex AI. Follow these steps to get started.
 
 ### 1. Installation
 
 **Clone the Repository**
 
 ```bash
-git clone https://github.com/google/computer-use-preview.git
-cd computer-use-preview
+git clone https://github.com/your-org/weaszel.git
+cd weaszel
 ```
 
-**Set up Python Virtual Environment and Install Dependencies**
+**Set up with UV (Recommended)**
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
+# Install dependencies with uv
+uv sync
 
-**Install Playwright and Browser Dependencies**
-
-```bash
-# Install system dependencies required by Playwright for Chrome
-playwright install-deps chrome
-
-# Install the Chrome browser for Playwright
-playwright install chrome
+# Install Playwright browsers
+uvx playwright install chromium
 ```
 
 ### 2. Configuration
-You can get started using either the Gemini Developer API or Vertex AI.
 
-#### A. If using the Gemini Developer API:
-
-You need a Gemini API key to use the agent:
+Create a `.env.local` file in the project root:
 
 ```bash
-export GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
+GEMINI_API_KEY=your_api_key_here
+EXPERIMENTAL_DESKTOP_ENABLED=false
 ```
 
-Or to add this to your virtual environment:
+Get your Gemini API key from: https://aistudio.google.com/app/apikey
+
+### 3. Running Weaszel
 
 ```bash
-echo 'export GEMINI_API_KEY="YOUR_GEMINI_API_KEY"' >> .venv/bin/activate
-# After editing, you'll need to deactivate and reactivate your virtual
-# environment if it's already active:
-deactivate
-source .venv/bin/activate
+uv run python job-weasel-agent/weasel.py
 ```
 
-Replace `YOUR_GEMINI_API_KEY` with your actual key.
+You'll be greeted with an interactive prompt. Try asking:
+- "Go to Amazon and find a mechanical keyboard"
+- "Find the latest AI news on TechCrunch"
+- "Search for cheap flights to Tokyo"
 
-#### B. If using the Vertex AI Client:
+## Architecture
 
-You need to explicitly use Vertex AI, then provide project and location to use the agent:
+Weaszel uses a **hybrid architecture**:
 
+- **Browser Tasks** (Default): Powered by [Browser-Use](https://github.com/browser-use/browser-use) framework with Gemini 2.0 Flash
+  - Fast, reliable web automation
+  - Intelligent navigation and data extraction
+  - Built-in error handling and retries
+
+- **Desktop Tasks** (Legacy): Falls back to Gemini Computer Use for local app control
+  - Available when `EXPERIMENTAL_DESKTOP_ENABLED=true`
+  - Can control local apps like Calculator, TextEdit, etc.
+  - Requires macOS Accessibility permissions
+
+## Key Files
+
+- `job-weasel-agent/weasel.py` - Main entry point
+- `job-weasel-agent/browser_agent.py` - Browser-Use wrapper
+- `job-weasel-agent/legacy_agent.py` - Desktop computer agent
+- `job-weasel-agent/user_data.md` - Store personal info for agents to use
+
+## Features
+
+✅ Natural language web automation  
+✅ Smart task routing (browser vs desktop)  
+✅ User profile support (`user_data.md`)  
+✅ Safety confirmations for risky actions  
+✅ Rich terminal UI with progress tracking  
+
+## Troubleshooting
+
+**Browser doesn't launch:**
 ```bash
-export USE_VERTEXAI=true
-export VERTEXAI_PROJECT="YOUR_PROJECT_ID"
-export VERTEXAI_LOCATION="YOUR_LOCATION"
+uvx playwright install chromium
 ```
 
-Or to add this to your virtual environment:
+**API key issues:**
+- Ensure your key starts with `AIza...`
+- Check it's set in `.env.local` in the project root
 
-```bash
-echo 'export USE_VERTEXAI=true' >> .venv/bin/activate
-echo 'export VERTEXAI_PROJECT="your-project-id"' >> .venv/bin/activate
-echo 'export VERTEXAI_LOCATION="your-location"' >> .venv/bin/activate
-# After editing, you'll need to deactivate and reactivate your virtual
-# environment if it's already active:
-deactivate
-source .venv/bin/activate
-```
+**Desktop control not working:**
+- Set `EXPERIMENTAL_DESKTOP_ENABLED=true` in `.env.local`
+- Grant Accessibility permissions to your terminal app
 
-Replace `YOUR_PROJECT_ID` and `YOUR_LOCATION` with your actual project and location.
+## Contributing
 
-### 3. Running the Tool
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
 
-The primary way to use the tool is via the `main.py` script.
+## License
 
-**General Command Structure:**
-
-```bash
-python main.py --query "Go to Google and type 'Hello World' into the search bar"
-```
-
-**Available Environments:**
-
-You can specify a particular environment with the ```--env <environment>``` flag.  Available options:
-
-- `playwright`: Runs the browser locally using Playwright.
-- `browserbase`: Connects to a Browserbase instance.
-
-**Local Playwright**
-
-Runs the agent using a Chrome browser instance controlled locally by Playwright.
-
-```bash
-python main.py --query="Go to Google and type 'Hello World' into the search bar" --env="playwright"
-```
-
-You can also specify an initial URL for the Playwright environment:
-
-```bash
-python main.py --query="Go to Google and type 'Hello World' into the search bar" --env="playwright" --initial_url="https://www.google.com/search?q=latest+AI+news"
-```
-
-**Browserbase**
-
-Runs the agent using Browserbase as the browser backend. Ensure the proper Browserbase environment variables are set:`BROWSERBASE_API_KEY` and `BROWSERBASE_PROJECT_ID`.
-
-```bash
-python main.py --query="Go to Google and type 'Hello World' into the search bar" --env="browserbase"
-```
-
-## Agent CLI
-
-The `main.py` script is the command-line interface (CLI) for running the browser agent.
-
-### Command-Line Arguments
-
-| Argument | Description | Required | Default | Supported Environment(s) |
-|-|-|-|-|-|
-| `--query` | The natural language query for the browser agent to execute. | Yes | N/A | All |
-| `--env` | The computer use environment to use. Must be one of the following: `playwright`, or `browserbase` | No | N/A | All |
-| `--initial_url` | The initial URL to load when the browser starts. | No | https://www.google.com | All |
-| `--highlight_mouse` | If specified, the agent will attempt to highlight the mouse cursor's position in the screenshots. This is useful for visual debugging. | No | False (not highlighted) | `playwright` |
-
-### Environment Variables
-
-| Variable | Description | Required |
-|-|-|-|
-| GEMINI_API_KEY | Your API key for the Gemini model. | Yes |
-| BROWSERBASE_API_KEY | Your API key for Browserbase. | Yes (when using the browserbase environment) |
-| BROWSERBASE_PROJECT_ID | Your Project ID for Browserbase. | Yes (when using the browserbase environment) |
-
-## Known Issues
-
-### Playwright Dropdown Menu
-
-On certain operating systems, the Playwright browser is unable to capture `<select>` elements because they are rendered by the operating system. As a result, the agent is unable to send the correct screenshot to the model.
-
-There are several ways to mitigate this.
-
-1. Use the Browserbase option instead of Playwright.
-2. Inject a script like [proxy-select](https://github.com/amitamb/proxy-select) to render a custom `<select>` element. You must inject `proxy-select.css` and `proxy-select.js` into each page that has a non-custom `<select>` element. You can do this in the [`Playwright.__enter__`](https://github.com/google-gemini/computer-use-preview/blob/main/computers/playwright/playwright.py#L100) method by adding a few lines of code, like the following (replacing `PROXY_SELECT_JS` and `PROXY_SELECT_CSS` with the appropriate variables):
-
-```python
-self._page.add_init_script(PROXY_SELECT_JS)
-def inject_style(page):
-    try:
-        page.add_style_tag(content=PROXY_SELECT_CSS)
-    except Exception as e:
-        print(f"Error injecting style: {e}")
-
-self._page.on('domcontentloaded', inject_style)
-```
-
-Note, option 2 does not work 100% of the time, but is a temporary workaround for certain websites. The better option is to use Browserbase.
+Apache 2.0 - See [LICENSE](LICENSE)

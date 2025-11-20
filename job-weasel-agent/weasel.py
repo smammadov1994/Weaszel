@@ -1,6 +1,10 @@
 import os
 import sys
 import time
+
+# Add current directory to path so imports work - MUST BE BEFORE LOCAL IMPORTS
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Prompt
@@ -16,11 +20,10 @@ load_dotenv() # Also try .env just in case
 # Configure Logging
 logger.add("weasel.log", rotation="10 MB", level="DEBUG")
 
-# Add current directory to path so imports work
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from legacy_agent import BrowserAgent as LegacyBrowserAgent
+from browser_agent import BrowserAgent
+from query_planner import QueryPlanner
 
-from agent import BrowserAgent
-from computers import PlaywrightComputer
 
 console = Console()
 
@@ -74,7 +77,7 @@ def print_welcome():
     # Compact panel with just title and version
     subtitle = Text("🦊 Your AI Agent for the Web.", style="italic cyan")
     version_table = Table(show_header=False, box=None)
-    version_table.add_row("[bold green]Version:[/bold green] 1.1.0", "[bold blue]Engine:[/bold blue] Gemini 2.5 Computer Use")
+    version_table.add_row("[bold green]Version:[/bold green] 2.0.0", "[bold blue]Engine:[/bold blue] Browser-Use + Gemini 2.5 Flash")
     
     panel_content = Group(
         Align.center(subtitle),
@@ -310,50 +313,41 @@ def main():
                         continue
 
                 if needs_browser:
-                    console.print("\n[bold cyan]This task requires a browser. Which one should I use?[/bold cyan]")
-                    console.print("[1] [bold white]Standard Chromium[/bold white] (Easiest, but might be detected)")
-                    console.print("[2] [bold white]Your Own Chrome[/bold white] (Stealthy, bypasses Cloudflare)")
-                    
-                    browser_choice = Prompt.ask("[bold magenta]Select Option[/bold magenta]", choices=["1", "2"], default="1")
-                    
-                    if browser_choice == "2":
-                        instructions = """
-[bold yellow]Step 1:[/bold yellow] Close ALL existing Chrome windows completely.
-[bold yellow]Step 2:[/bold yellow] Open a new terminal window.
-[bold yellow]Step 3:[/bold yellow] Run this command:
-    [green]./start_chrome.sh[/green]
-[bold yellow]Step 4:[/bold yellow] Log in if needed.
-                        """
-                        console.print(Panel(instructions, title="[bold green]Setup Instructions[/bold green]", border_style="green"))
-                        Prompt.ask("[bold magenta]Press Enter when Chrome is ready...[/bold magenta]")
-                        os.environ["CHROME_DEBUG_PORT"] = "9222"
-                    else:
-                        if "CHROME_DEBUG_PORT" in os.environ:
-                            del os.environ["CHROME_DEBUG_PORT"]
-                    
+                    # V2 Migration: Automatically use standard browser
+                    console.print("[dim]🚀 Initializing browser...[/dim]")
                     browser_initialized = True
                 else:
                     console.print("[dim]💻 No browser needed - using desktop tools only[/dim]")
 
             # Initialize Environment (only if browser was requested)
             if browser_initialized:
-                env = PlaywrightComputer(
-                    screen_size=PLAYWRIGHT_SCREEN_SIZE,
-                    initial_url="https://www.google.com",
-                    highlight_mouse=True
-                )
-
-                with env as browser_computer:
-                    agent = BrowserAgent(
-                        browser_computer=browser_computer,
-                        query=full_query,
-                        model_name='gemini-2.5-computer-use-preview-10-2025'
-                    )
-                    
-                    # Run the loop
-                    agent.agent_loop()
+                # V2: Use Browser-Use Framework with Query Planner
+                
+                # Step 1: Plan the query (analyze, clarify, enhance)
+                enhanced_query = full_query  # Default to original
+                task_type = "general"  # Default task type
+                try:
+                    console.print("[dim]🧠 Planning your task...[/dim]")
+                    planner = QueryPlanner()
+                    enhanced_query, task_type = planner.plan(full_query)
+                    console.print("[green]✓ Planning complete![/green]\n")
+                except Exception as e:
+                    console.print(f"[yellow]⚠️  Query planner failed: {type(e).__name__}: {str(e)}[/yellow]")
+                    console.print("[dim]→ Using original query instead...[/dim]\n")
+                    # Print traceback for debugging
+                    import traceback
+                    logger.error(f"Query planner error: {traceback.format_exc()}")
+                
+                # Step 2: Execute with enhanced query and retry logic
+                # Use gemini-2.5-flash - stable model optimized for agentic use cases
+                # with higher rate limits and built-in thinking capability
+                model_name = 'gemini-2.5-flash'
+                
+                agent = BrowserAgent(model_name=model_name, headless=False, task_type=task_type)
+                agent.run_sync(enhanced_query)
+                
             else:
-                # Desktop-only mode - use desktop computer
+                # Desktop-only mode - use desktop computer (Legacy)
                 console.print("[yellow]💻 Desktop-only mode - no browser needed![/yellow]")
                 
                 from desktop_computer import DesktopComputer
@@ -361,7 +355,7 @@ def main():
                 env = DesktopComputer()
                 
                 with env as desktop_computer:
-                    agent = BrowserAgent(
+                    agent = LegacyBrowserAgent(
                         browser_computer=desktop_computer,
                         query=full_query,
                         model_name='gemini-2.5-computer-use-preview-10-2025'
