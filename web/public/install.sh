@@ -48,7 +48,7 @@ else
     echo "ERROR: requirements.txt not found in $(pwd)"
     exit 1
 fi
-pip install loguru python-dotenv rich playwright google-genai browserbase termcolor
+
 
 # Install Playwright Browsers
 echo -e "${GREEN}Installing browsers...${NC}"

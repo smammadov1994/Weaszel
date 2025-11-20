@@ -6,7 +6,7 @@ from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.markdown import Markdown
 from rich.status import Status
-from dotenv import load_dotenv
+from dotenv import load_dotenv, set_key
 from loguru import logger
 
 # Load environment variables
@@ -74,7 +74,7 @@ def print_welcome():
     # Compact panel with just title and version
     subtitle = Text("🦊 Your AI Agent for the Web.", style="italic cyan")
     version_table = Table(show_header=False, box=None)
-    version_table.add_row("[bold green]Version:[/bold green] 1.0.0", "[bold blue]Engine:[/bold blue] Gemini 2.5 Computer Use")
+    version_table.add_row("[bold green]Version:[/bold green] 1.1.0", "[bold blue]Engine:[/bold blue] Gemini 2.5 Computer Use")
     
     panel_content = Group(
         Align.center(subtitle),
@@ -100,10 +100,67 @@ def print_welcome():
     examples_table.add_row("🛑", "[red]Stop or Exit[/red]")
     
     console.print(Align.center(examples_table))
-    console.print(Align.center(Text("\n[dim]Powered by Google Gemini Computer Use[/dim]\n")))
+    console.print(Align.center(Text("\n[dim]Powered by Google Gemini Computer Use[/dim]")))
+    console.print(Align.center(Text("⚠️  Experimental Desktop Control Enabled - Use with Caution", style="bold yellow")))
+    console.print("\n")
+
+from google import genai
+
+def validate_query_with_gemini(query: str, api_key: str) -> bool:
+    """
+    Asks Gemini if the query makes sense.
+    Returns True if valid, False otherwise.
+    """
+    # Fail fast on empty
+    if not query or not query.strip():
+        return False
+
+    try:
+        client = genai.Client(api_key=api_key, http_options={'api_version': 'v1alpha'})
+        
+        prompt = f"""
+        You are a query validator for an AI agent.
+        The user has input the following query: "{query}"
+        
+        Does this query make sense as a task for an AI agent to perform on a computer?
+        It should be a clear instruction or question.
+        
+        Examples of INVALID queries:
+        - "asdasd" (random gibberish)
+        - "do" (incomplete command)
+        - "nothing" (no action)
+        - "hello" (just a greeting, not a task - though borderline, usually invalid for a task agent)
+        - "" (empty)
+        
+        Examples of VALID queries:
+        - "Find me a flight to Tokyo"
+        - "Open notepad and write a poem"
+        - "Check the weather"
+        - "Go to google.com"
+        
+        Respond with ONLY "VALID" or "INVALID".
+        """
+        
+        response = client.models.generate_content(
+            model='gemini-2.0-flash-exp',
+            contents=prompt
+        )
+        result = response.text.strip().upper()
+        
+        if "INVALID" in result:
+            return False
+        return True
+        
+    except Exception as e:
+        logger.error(f"Validation failed: {e}")
+        # If validation fails (e.g. network), assume valid to not block user
+        return True
 
 def main():
     print_welcome()
+
+    # Define env file path
+    env_file = os.path.join(os.path.dirname(__file__), '.env.local')
 
     # Check API Key
     api_key = os.getenv("GEMINI_API_KEY")
@@ -113,7 +170,6 @@ def main():
         api_key = Prompt.ask("[bold green]Enter your Gemini API Key[/bold green]", password=True)
         
         # Save to .env.local for persistence
-        env_file = os.path.join(os.path.dirname(__file__), '.env.local')
         with open(env_file, 'w') as f:
             f.write(f'GEMINI_API_KEY={api_key}\n')
         
@@ -125,6 +181,53 @@ def main():
     if user_data:
         console.print("[green]✅ User profile loaded from user_data.md[/green]")
 
+    # Check for Experimental Desktop Flag
+    desktop_enabled_str = os.environ.get("EXPERIMENTAL_DESKTOP_ENABLED")
+    
+    if desktop_enabled_str is None:
+        console.print(Panel.fit(
+            "[bold cyan]Welcome to Weaszel Setup![/bold cyan]\n\n"
+            "Please select your operation mode:\n\n"
+            "[bold green]1. Browser Automation (Recommended)[/bold green]\n"
+            "   - Stable, fast, and safe.\n"
+            "   - Best for web research, job applications, and data gathering.\n\n"
+            "[bold yellow]2. Full Desktop Control (Experimental)[/bold yellow]\n"
+            "   - Can control your mouse and keyboard.\n"
+            "   - [red]Warning:[/red] Can be flaky and requires extra permissions.\n"
+            "   - Use only if you need to control local apps (e.g. TextEdit, VS Code).",
+            title="[bold magenta]Configuration[/bold magenta]"
+        ))
+        
+        mode_choice = Prompt.ask("[bold]Select Mode[/bold]", choices=["1", "2"], default="1")
+        
+        if mode_choice == "2":
+            # Desktop Mode Flow
+            console.print("\n[bold yellow]⚠️  Enabling Experimental Desktop Control[/bold yellow]")
+            console.print("You must grant [bold]Screen Recording[/bold] and [bold]Accessibility[/bold] permissions to your terminal.")
+            console.print("1. Open System Settings -> Privacy & Security")
+            console.print("2. Enable permissions for Terminal/iTerm/VSCode")
+            console.print("3. Restart your terminal if needed.\n")
+            
+            if Prompt.ask("Are you ready to proceed?", choices=["y", "n"], default="y") == "y":
+                set_key(env_file, "EXPERIMENTAL_DESKTOP_ENABLED", "true")
+                os.environ["EXPERIMENTAL_DESKTOP_ENABLED"] = "true"
+                console.print("[green]Desktop Control Enabled![/green]")
+            else:
+                set_key(env_file, "EXPERIMENTAL_DESKTOP_ENABLED", "false")
+                os.environ["EXPERIMENTAL_DESKTOP_ENABLED"] = "false"
+                console.print("[green]Falling back to Browser Mode.[/green]")
+        else:
+            # Browser Mode (Default)
+            set_key(env_file, "EXPERIMENTAL_DESKTOP_ENABLED", "false")
+            os.environ["EXPERIMENTAL_DESKTOP_ENABLED"] = "false"
+            console.print("[green]Browser Automation Mode Configured![/green]")
+    
+    # Convert to boolean
+    desktop_enabled = os.environ.get("EXPERIMENTAL_DESKTOP_ENABLED", "false").lower() == "true"
+    
+    if desktop_enabled:
+        console.print("[bold yellow]⚠️  Experimental Desktop Control Active[/bold yellow]")
+
     # Main loop - ask for task first!
     browser_initialized = False
     browser_choice = None
@@ -135,6 +238,14 @@ def main():
 
         if query.lower() in ['exit', 'quit']:
             break
+            
+        # Validate Query
+        with console.status("[bold green]🧠 Evaluating query...[/bold green]"):
+            is_valid = validate_query_with_gemini(query, api_key)
+            
+        if not is_valid:
+            console.print(Panel(f"[bold red]😕 I didn't understand that task.[/bold red]\n\nYour query [italic]'{query}'[/italic] doesn't seem like a clear instruction.\nPlease try again with a specific task like:\n- [cyan]\"Find a flight to Paris\"[/cyan]\n- [cyan]\"Open TextEdit and write a note\"[/cyan]", title="Invalid Query", border_style="red"))
+            continue
 
         # Augment query with user data
         full_query = query
@@ -149,12 +260,55 @@ def main():
                 # Ask Gemini if this task needs browser
                 console.print("[dim]🤔 Analyzing if browser is needed...[/dim]")
                 
-                # Simple heuristic: if task mentions websites, searching, or browser actions
-                needs_browser = any(keyword in query.lower() for keyword in [
-                    'search', 'google', 'website', 'amazon', 'indeed', 'linkedin',
-                    'browse', 'find on', 'shop', 'buy', 'flight', 'kayak', 'book'
-                ])
+                # Use Gemini to decide tool
+                try:
+                    client = genai.Client(api_key=api_key, http_options={'api_version': 'v1alpha'})
+                    tool_prompt = f"""
+                    You are a tool selector for an AI agent.
+                    The user wants to: "{query}"
+                    
+                    Does this task require a Web Browser to complete?
+                    
+                    Respond with "BROWSER" if it needs to visit websites, search the web, or use web apps.
+                    Respond with "DESKTOP" if it is a local system task (opening apps, files, finder, settings, writing notes).
+                    
+                    Examples:
+                    - "Find a flight" -> BROWSER
+                    - "Open calculator" -> DESKTOP
+                    - "Go to runescape.com" -> BROWSER
+                    - "Search for cats" -> BROWSER
+                    - "Open weaszel-screenshot.png" -> DESKTOP
+                    
+                    Response (BROWSER/DESKTOP):
+                    """
+                    
+                    response = client.models.generate_content(
+                        model='gemini-2.0-flash-exp',
+                        contents=tool_prompt
+                    )
+                    decision = response.text.strip().upper()
+                    needs_browser = "BROWSER" in decision
+                except Exception as e:
+                    logger.error(f"Tool selection failed: {e}")
+                    # Fallback to keyword heuristic if API fails
+                    needs_browser = any(keyword in query.lower() for keyword in [
+                        'search', 'google', 'website', 'amazon', 'indeed', 'linkedin',
+                        'browse', 'find on', 'shop', 'buy', 'flight', 'kayak', 'book',
+                        'go to', '.com', '.org', 'http'
+                    ])
                 
+                # Enforce Desktop Flag
+                if not needs_browser and not desktop_enabled:
+                    console.print("[yellow]⚠️  Desktop Control is disabled.[/yellow]")
+                    console.print("I can only perform browser tasks right now.")
+                    console.print("To enable desktop control, delete [bold]EXPERIMENTAL_DESKTOP_ENABLED[/bold] from .env.local and restart.")
+                    
+                    # Force browser or ask again? Let's force browser as fallback or just continue loop
+                    if Prompt.ask("Do you want to try this in the browser instead?", choices=["y", "n"]) == "y":
+                        needs_browser = True
+                    else:
+                        continue
+
                 if needs_browser:
                     console.print("\n[bold cyan]This task requires a browser. Which one should I use?[/bold cyan]")
                     console.print("[1] [bold white]Standard Chromium[/bold white] (Easiest, but might be detected)")
@@ -199,14 +353,22 @@ def main():
                     # Run the loop
                     agent.agent_loop()
             else:
-                # Desktop-only mode - no browser
-                console.print("[yellow]⚠️ Desktop-only mode is experimental![/yellow]")
-                console.print("[yellow]Creating a minimal agent for desktop tasks...[/yellow]")
-                # TODO: Create a desktop-only agent that doesn't need browser
-                # For now, just inform the user
-                console.print("[red]Desktop-only mode not fully implemented yet.[/red]")
-                console.print("[yellow]Tip: For desktop+web tasks, try: \"Open Finder and then search Google for X\"[/yellow]")
-                continue
+                # Desktop-only mode - use desktop computer
+                console.print("[yellow]💻 Desktop-only mode - no browser needed![/yellow]")
+                
+                from desktop_computer import DesktopComputer
+                
+                env = DesktopComputer()
+                
+                with env as desktop_computer:
+                    agent = BrowserAgent(
+                        browser_computer=desktop_computer,
+                        query=full_query,
+                        model_name='gemini-2.5-computer-use-preview-10-2025'
+                    )
+                    
+                    # Run the loop
+                    agent.agent_loop()
                 
             console.print("[bold green]✅ Task Completed![/bold green]")
 

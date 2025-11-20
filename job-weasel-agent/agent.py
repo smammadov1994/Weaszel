@@ -91,9 +91,19 @@ class BrowserAgent:
         # Exclude any predefined functions here.
         excluded_predefined_functions = []
 
+        # Import desktop automation functions
+        # Import desktop automation functions
+        from desktop_functions import DESKTOP_FUNCTION_MAP
+        
+        # Store desktop function map for execution
+        self._desktop_function_map = DESKTOP_FUNCTION_MAP
+
         # Add your own custom functions here.
         custom_functions = [
-            # For example:
+            types.FunctionDeclaration.from_callable(client=self._client, callable=func)
+            for func in DESKTOP_FUNCTION_MAP.values()
+        ] + [
+            # Example math function
             types.FunctionDeclaration.from_callable(
                 client=self._client, callable=multiply_numbers
             )
@@ -190,6 +200,15 @@ class BrowserAgent:
         # Handle the custom function declarations here.
         elif action.name == multiply_numbers.__name__:
             return multiply_numbers(x=action.args["x"], y=action.args["y"])
+        # Handle desktop automation functions
+        elif action.name in self._desktop_function_map:
+            console.print(f"[yellow]🖥️  Desktop action: {action.name}[/yellow]")
+            func = self._desktop_function_map[action.name]
+            # Filter out safety_decision - it's handled separately
+            clean_args = {k: v for k, v in action.args.items() if k != 'safety_decision'}
+            result = func(**clean_args)
+            console.print(f"[green]✅ Result: {result}[/green]")
+            return result
         else:
             raise ValueError(f"Unsupported function: {action}")
 
@@ -367,8 +386,10 @@ class BrowserAgent:
                     )
                 )
             elif isinstance(fc_result, dict):
+                # Merge extra fields (like safety_acknowledgement) into the result
+                response_data = {**fc_result, **extra_fr_fields}
                 function_responses.append(
-                    FunctionResponse(name=function_call.name, response=fc_result)
+                    FunctionResponse(name=function_call.name, response=response_data)
                 )
 
         self._contents.append(
