@@ -92,13 +92,17 @@ class BrowserAgent:
         excluded_predefined_functions = []
 
         # Import desktop automation functions
-        from desktop_functions import get_desktop_functions, DESKTOP_FUNCTION_MAP
+        # Import desktop automation functions
+        from desktop_functions import DESKTOP_FUNCTION_MAP
         
         # Store desktop function map for execution
         self._desktop_function_map = DESKTOP_FUNCTION_MAP
 
         # Add your own custom functions here.
-        custom_functions = get_desktop_functions() + [
+        custom_functions = [
+            types.FunctionDeclaration.from_callable(client=self._client, callable=func)
+            for func in DESKTOP_FUNCTION_MAP.values()
+        ] + [
             # Example math function
             types.FunctionDeclaration.from_callable(
                 client=self._client, callable=multiply_numbers

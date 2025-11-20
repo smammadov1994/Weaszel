@@ -2,7 +2,7 @@
 import subprocess
 import time
 from typing import Dict, Any, Optional
-from google.genai import types
+
 
 def open_app(app_name: str) -> Dict[str, Any]:
     """Opens a macOS application by name.
@@ -47,39 +47,6 @@ def execute_applescript(script: str) -> Dict[str, Any]:
         return {"status": "success", "output": result.stdout.strip()}
     except subprocess.CalledProcessError as e:
         return {"status": "error", "error": e.stderr}
-
-def get_desktop_functions():
-    """Returns list of desktop function declarations for Gemini."""
-    return [
-        types.FunctionDeclaration(
-            name="open_app",
-            description="Opens a macOS application by name (e.g., 'Finder', 'Safari', 'Notes', 'Calculator')",
-            parameters=types.Schema(
-                type=types.Type.OBJECT,
-                properties={
-                    "app_name": types.Schema(
-                        type=types.Type.STRING,
-                        description="Name of the macOS application to open"
-                    )
-                },
-                required=["app_name"]
-            )
-        ),
-        types.FunctionDeclaration(
-            name="execute_applescript",
-            description="Executes an AppleScript command for advanced macOS automation",
-            parameters=types.Schema(
-                type=types.Type.OBJECT,
-                properties={
-                    "script": types.Schema(
-                        type=types.Type.STRING,
-                        description="AppleScript code to execute"
-                    )
-                },
-                required=["script"]
-            )
-        ),
-    ]
 
 # Map function names to callable functions
 DESKTOP_FUNCTION_MAP = {
