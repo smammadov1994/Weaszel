@@ -1,12 +1,13 @@
 import os
 import asyncio
 from typing import Optional
-from browser_use import Agent, Browser, Controller, BrowserConfig
-from browser_use.browser.context import BrowserContextConfig
+
+from browser_use import Agent, Browser, Controller
 from browser_use.llm.google.chat import ChatGoogle
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
+
 from retry_controller import RetryController
 
 console = Console()
@@ -33,20 +34,18 @@ class BrowserAgent:
         )
         
         # Initialize the Browser
+        # NOTE: In latest browser-use, `Browser` is an alias for `BrowserSession`.
+        # We configure it directly via keyword arguments instead of BrowserConfig.
         self.browser = Browser(
-            config=BrowserConfig(
-                headless=self.headless,
-                disable_security=True,
-                extra_chromium_args=[
-                    "--disable-infobars",
-                    "--disable-popup-blocking",
-                    "--disable-notifications",
-                ],
-                new_context_config=BrowserContextConfig(
-                    wait_for_network_idle_page_load_time=15.0, # Increased timeout for slower sites (e.g. Indeed)
-                    minimum_wait_page_load_time=3.0, 
-                )
-            )
+            headless=self.headless,
+            args=[
+                "--disable-infobars",
+                "--disable-popup-blocking",
+                "--disable-notifications",
+            ],
+            # Slightly higher timeouts for slow sites (Indeed, etc.)
+            wait_for_network_idle_page_load_time=15.0,
+            minimum_wait_page_load_time=3.0,
         )
         
         # Initialize Controller

@@ -28,8 +28,20 @@ INSTALL_DIR="$HOME/.weaszel"
 
 if [ -d "$INSTALL_DIR" ]; then
     echo -e "${CYAN}Updating existing installation...${NC}"
-    cd "$INSTALL_DIR"
-    git pull
+    cd "$INSTALL_DIR" || exit 1
+
+    # Always update from main so users don't get stuck on old feature branches
+    git fetch origin
+
+    # Ensure we're on main (create it if needed)
+    if git rev-parse --verify main >/dev/null 2>&1; then
+        git checkout main >/dev/null 2>&1
+    else
+        git checkout -b main origin/main >/dev/null 2>&1 || true
+    fi
+
+    # Pull latest changes from main explicitly (avoids tracking issues)
+    git pull origin main || git pull
 else
     # Clone the repo
     echo -e "${GREEN}Cloning repository...${NC}"
