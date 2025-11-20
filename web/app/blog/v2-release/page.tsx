@@ -160,16 +160,14 @@ Result`}</pre>
 
               <h2 className="text-3xl font-bold text-stone-100 mt-12 mb-4">Upgrading to 2.0</h2>
               <p className="text-stone-400 mb-4">
-                The upgrade is seamless. Just pull the latest version:
+                The upgrade is seamless. Just run the installer again to update everything automatically:
               </p>
               <div className="bg-black/50 rounded-lg p-6 mb-6 font-mono text-sm border border-stone-800">
-                <code className="text-amber-400">cd ~/path/to/weaszel<br/>
-git pull origin main<br/>
-uv sync<br/>
-uv run python job-weasel-agent/weasel.py</code>
+                <code className="text-amber-400">curl -sL https://weaszel.com/install.sh | bash<br/>
+weaszel</code>
               </div>
               <p className="text-stone-400 mb-6">
-                Your queries work exactly the same. The difference is they'll complete 3-5x faster.
+                Or if you prefer manual updates, just pull the latest changes. Then simply type <code className="text-amber-400">weaszel</code> as usual.
               </p>
 
               <h2 className="text-3xl font-bold text-stone-100 mt-12 mb-4">Looking Ahead</h2>
