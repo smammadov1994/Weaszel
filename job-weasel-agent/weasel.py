@@ -136,6 +136,10 @@ def main():
         if query.lower() in ['exit', 'quit']:
             break
 
+        if not query.strip():
+            console.print("[yellow]⚠️  Please enter a task for me to do.[/yellow]")
+            continue
+
         # Augment query with user data
         full_query = query
         if user_data:
