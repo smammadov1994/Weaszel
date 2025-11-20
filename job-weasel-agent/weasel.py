@@ -100,7 +100,9 @@ def print_welcome():
     examples_table.add_row("🛑", "[red]Stop or Exit[/red]")
     
     console.print(Align.center(examples_table))
-    console.print(Align.center(Text("\n[dim]Powered by Google Gemini Computer Use[/dim]\n")))
+    console.print(Align.center(Text("\n[dim]Powered by Google Gemini Computer Use[/dim]")))
+    console.print(Align.center(Text("⚠️  Experimental Desktop Control Enabled - Use with Caution", style="bold yellow")))
+    console.print("\n")
 
 from google import genai
 
