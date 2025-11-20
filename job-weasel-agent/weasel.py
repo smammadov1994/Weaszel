@@ -209,11 +209,42 @@ def main():
                 # Ask Gemini if this task needs browser
                 console.print("[dim]🤔 Analyzing if browser is needed...[/dim]")
                 
-                # Simple heuristic: if task mentions websites, searching, or browser actions
-                needs_browser = any(keyword in query.lower() for keyword in [
-                    'search', 'google', 'website', 'amazon', 'indeed', 'linkedin',
-                    'browse', 'find on', 'shop', 'buy', 'flight', 'kayak', 'book'
-                ])
+                # Use Gemini to decide tool
+                try:
+                    client = genai.Client(api_key=api_key, http_options={'api_version': 'v1alpha'})
+                    tool_prompt = f"""
+                    You are a tool selector for an AI agent.
+                    The user wants to: "{query}"
+                    
+                    Does this task require a Web Browser to complete?
+                    
+                    Respond with "BROWSER" if it needs to visit websites, search the web, or use web apps.
+                    Respond with "DESKTOP" if it is a local system task (opening apps, files, finder, settings, writing notes).
+                    
+                    Examples:
+                    - "Find a flight" -> BROWSER
+                    - "Open calculator" -> DESKTOP
+                    - "Go to runescape.com" -> BROWSER
+                    - "Search for cats" -> BROWSER
+                    - "Open weaszel-screenshot.png" -> DESKTOP
+                    
+                    Response (BROWSER/DESKTOP):
+                    """
+                    
+                    response = client.models.generate_content(
+                        model='gemini-2.0-flash-exp',
+                        contents=tool_prompt
+                    )
+                    decision = response.text.strip().upper()
+                    needs_browser = "BROWSER" in decision
+                except Exception as e:
+                    logger.error(f"Tool selection failed: {e}")
+                    # Fallback to keyword heuristic if API fails
+                    needs_browser = any(keyword in query.lower() for keyword in [
+                        'search', 'google', 'website', 'amazon', 'indeed', 'linkedin',
+                        'browse', 'find on', 'shop', 'buy', 'flight', 'kayak', 'book',
+                        'go to', '.com', '.org', 'http'
+                    ])
                 
                 if needs_browser:
                     console.print("\n[bold cyan]This task requires a browser. Which one should I use?[/bold cyan]")

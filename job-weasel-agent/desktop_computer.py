@@ -84,6 +84,13 @@ class DesktopComputer(Computer):
         return self.current_state()
     
     def navigate(self, url: str) -> EnvState:
+        """Opens the URL in the default browser."""
+        import subprocess
+        try:
+            subprocess.run(['open', url], check=True)
+            time.sleep(2) # Wait for browser to open
+        except Exception as e:
+            print(f"Failed to open URL: {e}")
         return self.current_state()
     
     def key_combination(self, keys: list[str]) -> EnvState:
