@@ -1,6 +1,8 @@
 import os
 import asyncio
 import json
+from datetime import datetime
+from pathlib import Path
 from browser_use import Agent
 from browser_use.browser import BrowserSession
 from browser_use.browser.profile import BrowserProfile
@@ -48,6 +50,27 @@ class BrowserAgent:
         
         # Flag to track if login was requested
         self._login_requested = False
+        
+        # Setup failure logging
+        self.logs_dir = Path("logs")
+        self.logs_dir.mkdir(exist_ok=True)
+    
+    def log_failure(self, context: str, error: str, action_attempted: str):
+        """Log failures for learning and analysis."""
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        log_file = self.logs_dir / f"failure_{timestamp}.json"
+        
+        failure_data = {
+            "timestamp": timestamp,
+            "context": context,
+            "error": error,
+            "action_attempted": action_attempted
+        }
+        
+        with open(log_file, 'w') as f:
+            json.dump(failure_data, f, indent=2)
+        
+        console.print(f"[yellow]⚠️  Failure logged to {log_file}[/yellow]")
         
         @self.controller.action('Request user to login')
         def request_login(message: str = "Please log in to continue") -> str:
@@ -193,20 +216,11 @@ class BrowserAgent:
             "- Read resume.json and identity.json for form filling\n"
             "- Use 'Request user to login' if you hit login pages or external sites you can't access\n"
             "\n"
-            "OPERATIONAL INSTRUCTIONS:\n"
-            "\n"
-            "Login Handling:\n"
-            "- If you see 'Sign in', 'Log in', or authentication page → use 'Request user to login' action\n"
-            "- DO NOT try to fill login credentials yourself\n"
-            "- After login completes, verify what tab/page you're on before continuing\n"
-            "\n"
-            "File Reading:\n"
-            "- Resume data: 'Read JSON file' with /Users/seymurmammadov/Documents/Weaszel/resume.json\n"
-            "- Demographics: 'Read JSON file' with /Users/seymurmammadov/Documents/Weaszel/identity.json\n"
-            "\n"
-            "Tab Management:\n"
-            "- When new tab opens (e.g., clicking 'Apply'), IMMEDIATELY switch to that new tab\n"
-            "- Track which tab you're in and what URL you're on\n"
+            "OPERATIONAL ESSENTIALS:\n"
+            "- Login: Use 'Request user to login' action (don't fill credentials yourself)\n"
+            "- Files: Use 'Read JSON file' with /Users/seymurmammadov/Documents/Weaszel/resume.json or identity.json\n"
+            "- Tabs: Switch to new tabs immediately when they open\n"
+            "- Loops: If repeating same action 2+ times → STOP → Use 'Request user guidance'\n"
             "\n"
             "DOMAIN AWARENESS:\n"
             "- Pay attention to which website you're on (look at the URL).\n"
