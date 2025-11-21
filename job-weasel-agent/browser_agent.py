@@ -58,17 +58,27 @@ class BrowserAgent:
             self._login_requested = True
             console.print(Panel(
                 f"[yellow]{message}[/yellow]\n\n"
-                "[cyan]Please log in to the site manually in the browser.[/cyan]\n"
-                "[dim]The agent will wait for you to complete the login.[/dim]",
+                "[cyan]You have two options:[/cyan]\n"
+                "1. Log in to the site, then press [bold]Enter[/bold] to continue\n"
+                "2. Type new instructions (e.g., 'go back to Indeed') and press [bold]Enter[/bold]\n\n"
+                "[dim]The agent will either continue the current task or follow your new instructions.[/dim]",
                 title="[bold red]🔐 Login Required[/bold red]",
                 border_style="yellow"
             ))
             
-            # Wait for user to press Enter
-            input("\n[Press Enter to continue after logging in] ")
-            console.print("\n[green]✓ Resuming task...[/green]\n")
-            self._login_requested = False
-            return "User has completed login. IMMEDIATELY VERIFY: 1) What tab/page am I currently on? Check the URL. 2) Is this the correct page for my task? 3) Do I need to switch tabs or navigate? 4) What is my current state (logged in, search terms, etc.)? Then continue."
+            # Get user input - could be empty (just Enter) or new instructions
+            user_input = input("\n[Your choice] ").strip()
+            
+            if user_input:
+                # User provided new instructions
+                console.print(f"\n[yellow]📝 New instructions received: {user_input}[/yellow]\n")
+                self._login_requested = False
+                return f"User cannot login to this site. User provided new instructions: '{user_input}'. IMMEDIATELY follow these new instructions. Forget the current job application and do what the user asked."
+            else:
+                # User just pressed Enter - continue with login
+                console.print("\n[green]✓ Resuming task...[/green]\n")
+                self._login_requested = False
+                return "User has completed login. IMMEDIATELY VERIFY: 1) What tab/page am I currently on? Check the URL. 2) Is this the correct page for my task? 3) Do I need to switch tabs or navigate? 4) What is my current state (logged in, search terms, etc.)? Then continue."
         
         @self.controller.action("Request user guidance", param_model=None)
         def request_guidance(message: str = "I'm not sure how to proceed"):
@@ -143,64 +153,20 @@ class BrowserAgent:
             "- After the wait, in your NEXT step, reflect: 'What changed? Did my action succeed?'\n"
             "- NEVER rush. Quality > Speed. Taking 30 steps carefully is better than failing in 10 rushed steps.\n"
             "\n"
-            "========================================\n"
-            "IF YOUR TASK INVOLVES JOB SEARCHING OR APPLICATIONS, READ THIS SECTION:\n"
-            "========================================\n"
-            "\n"
-            "JOB SEARCH UNDERSTANDING:\n"
-            "- Understand the difference between JOB TITLE (what to search) and JOB PREFERENCES (what to filter).\n"
-            "- If instructed to search for 'Frontend engineer' and 'focus on React/TypeScript jobs', DO:\n"
-            "  * Search for: 'Frontend engineer' (in job title field)\n"
-            "  * Filter by: Look at job descriptions and prefer ones mentioning React/TypeScript\n"
-            "- Do NOT type comma-separated preferences into the job title search field.\n"
-            "- Job titles are roles (e.g., 'Software Engineer', 'Frontend Developer', 'Data Analyst').\n"
-            "- Preferences are skills/technologies (e.g., 'React', 'Python', 'AWS').\n"
-            "\n"
-            "ANTI-REFRESH RULES:\n"
-            "- NEVER refresh the page unnecessarily. Before refreshing, ask yourself: 'Is the page broken or is the data I need already here?'\n"
-            "- Do NOT use the 'go_back' action and then navigate forward - this causes unnecessary reloads.\n"
-            "- Do NOT refresh just because you're unsure - instead, WAIT and observe the current page.\n"
-            "- If the page looks correct and has content, DO NOT REFRESH IT.\n"
-            "- Only refresh if: page is blank/broken, stuck loading, or explicitly shows an error.\n"
-            "- After navigation, WAIT for the page to load, then work with what's there. Don't refresh.\n"
-            "\n"
-            "STATE VERIFICATION & SELF-REFLECTION PROTOCOL:\n"
-            "- Every 3-5 steps, PAUSE and ask yourself these questions:\n"
-            "  1. What was my original task? (re-read it from memory)\n"
-            "  2. What key state/information do I need to maintain? (login status, form data, search terms, etc.)\n"
-            "  3. Does the current page match what I expect based on my previous actions?\n"
-            "  4. Have any critical conditions changed? (logged out, page refreshed, data cleared, etc.)\n"
-            "  5. Am I making progress toward the goal, or am I stuck/looping?\n"
-            "- In your MEMORY field, explicitly track critical state variables relevant to your task.\n"
-            "- After ANY navigation (back, forward, tab switch, new page), re-verify your assumptions.\n"
-            "- If something unexpected happened (form cleared, logged out, wrong page), ACKNOWLEDGE it and adapt.\n"
-            "- Example memory: 'Task: Apply to jobs. State: Logged in=Yes, Search=[software engineer, NYC], Current=Job listing page'\n"
-            "\n"
-            "MANDATORY CHECKPOINTS (DO NOT SKIP):\n"
-            "\n"
-            "CHECKPOINT 1 - After Login:\n"
-            "- Before proceeding, VERIFY search terms are in the fields.\n"
-            "- Look at the job title field - does it show the title you were instructed to search for?\n"
-            "- Look at the location field - does it show the location you were instructed to search for?\n"
-            "- If EITHER field is EMPTY or WRONG, you MUST re-enter the search terms.\n"
-            "- Do NOT click on any job until search is complete and verified.\n"
-            "\n"
-            "CHECKPOINT 2 - Before Applying to a Job:\n"
-            "- Read the job title and description carefully.\n"
-            "- Check if the job matches your tech stack preferences (e.g., React, TypeScript, JavaScript).\n"
-            "- Look for keywords in the description that match your preferences.\n"
-            "- If the job does NOT mention your preferred technologies, DO NOT APPLY.\n"
-            "- Only click Apply on jobs that clearly match the requirements.\n"
-            "- If unsure, use 'Request user guidance' to confirm the job is suitable.\n"
-            "\n"
-            "========================================\n"
-            "END OF JOB-SPECIFIC INSTRUCTIONS\n"
-            "========================================\n"
+            "JOB SEARCH INTELLIGENCE (If task involves job searching):\n"
+            "- Understand user's goal: job title, preferred skills/tech, location, site\n"
+            "- Navigate site's search interface naturally\n"
+            "- Look for jobs matching criteria on current screen FIRST before scrolling\n"
+            "- Prefer easy apply options (Easy Apply, Quick Apply, Apply Now)\n"
+            "- If you scroll 2+ times without clicking a job, STOP and ask user\n"
+            "- Read resume.json and identity.json for form filling\n"
+            "- Use 'Request user to login' if you hit login pages or external sites you can't access\n"
             "\n"
             "ANTI-LOOP PROTECTION:\n"
-            "- If you find yourself doing the SAME action 3+ times in a row (like scrolling), STOP.\n"
+            "- If you find yourself doing the SAME action 2+ times in a row (like scrolling), STOP.\n"
+            "- Scrolling more than twice in a row means you're stuck. Use 'Request user guidance'.\n"
             "- Use 'Request user guidance' action to explain what you're stuck on and ask for help.\n"
-            "- Example: If you've scrolled 8 times and still can't find a button, ask the user.\n"
+            "- Example: If you've scrolled 3 times without clicking a job, ask the user.\n"
             "\n"
             "DOMAIN AWARENESS:\n"
             "- Pay attention to which website you're on (look at the URL).\n"
