@@ -45,30 +45,13 @@ from rich.console import Group
 def print_welcome():
     console.clear()
     
-    # ASCII Art - Display ABOVE the box
+    # Compact ASCII Art
     weasel_art = """
-⠀⠀⠀⠀⠀⠀⠀⠀⣠⡶⣛⣉⣙⢦⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⣾⠋⠁⠀⠀⠀⠑⣿⣆⠀⢠⡤⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⢸⡇⠀⡴⠋⠑⣄⢤⡤⠧⣤⣬⣦⢤⣵⣤⣀⣠⢴⣶⡶⠶⠿⠿⣶⣶⣤⡀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⢸⡇⠀⠀⠀⠀⣘⣤⠿⠛⠛⠅⠀⠀⠀⠈⠉⠙⢿⣧⡀⠀⣀⣀⣀⠀⠙⢿⢹⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⢸⡇⠀⣲⡟⡿⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠳⡿⡍⠁⠀⠙⡗⠀⠈⡇⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⢸⡇⠊⣷⠋⠰⠒⠄⠀⠀⠀⠀⠀⠀⠀⡖⡆⠀⠀⠀⠀⠈⢇⢧⠀⠀⠀⠁⠀⢸⡇⠀⠀
-⠀⠀⠀⠀⠀⠀⠘⡇⡼⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⡎⣾⣛⠀⠀⢀⡟⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⣯⠇⡴⣫⣳⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⡤⣄⠀⠀⠀⠀⠀⡇⡟⠃⠀⠀⡾⠃⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⡞⡎⣸⣿⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⣾⣿⣯⣷⣷⠀⠀⠀⠀⡇⡧⠤⠶⠛⠁⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⢰⢱⠃⡿⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⣼⡟⡷⣷⣯⡇⡇⠀⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⢀⡤⣞⣉⡍⢏⡼⠀⠘⠷⠃⠁⣀⣀⣀⠀⠀⠀⠀⣇⢿⣿⡿⢼⡾⠁⠀⠀⠀⣿⣒⡲⠶⠦⠀⠀⠀⠀⠀
-⠉⢁⠖⠉⢀⡜⣷⠀⠀⠀⠀⠀⠈⠉⠉⠀⠀⠀⠀⠛⠉⠙⠉⠉⠀⠀⠀⠀⣾⠳⢤⣄⠑⠦⡀⠀⠀⠀⠀
-⠀⣎⡤⢺⠋⠀⠘⡧⡀⠀⠸⠤⠞⢧⣀⡼⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⠟⡜⢹⡧⢄⡘⢌⠑⠦⣳⡀⠀
-⠘⠁⢠⠃⠀⡠⠔⠉⠻⢷⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⡤⠖⠡⠖⡡⠊⣿⠀⠀⠈⠳⠀⠀⠁⠀⠀
-⠀⠀⠘⠛⠉⠀⠀⠀⠀⠀⠈⣷⣍⠛⠛⠭⠭⠭⠭⠟⢋⡥⠞⠁⠀⠀⠉⠀⠀⣷⣇⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣯⠢⣝⠒⠒⠒⠒⡉⠉⠀⠀⠀⠀⠀⠀⠀⢀⠎⠀⠀⡏⢧⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⡟⢆⡀⠀⠉⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠊⠁⠀⠀⠘⣼⡆⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡜⣽⠇⠓⠤⠥⠭⠭⠭⠀⠀⠀⠀⠀⠀⠀⡆⠀⠀⠀⠀⡤⠊⢱⡘⡄⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⡼⠁⣿⡶⣒⣶⡀⠀⠀⣠⡶⠶⠒⠒⠖⠋⠀⠀⠀⡀⠀⠀⠀⣀⠔⠻⡼⡀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⡰⠁⣼⠃⠚⢁⣼⡇⠀⢰⣇⡒⠒⠂⠀⠀⠀⠀⠀⠀⣇⠀⠀⠀⠁⠀⠀⣸⣿⡀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠁⠀⠀⠈⣝⠇⠀⠀⢳⡄⠉⠁⠀⠀⠀⢀⡴⠓⠋⠀⠀⠀⠀⠀⠀⠀⠀⠘⣆
-⠀⠀⠀⠀⠀⠀⠀⠀⠧⣀⣀⡠⠶⠋⠁⠀⠀⠀⠀⠉⠉⠙⠛⠛⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+ ██     ██ ███████  █████  ███████ ███████ ███████ ██      
+ ██     ██ ██      ██   ██    ███  ███  ██ ██      ██      
+ ██  █  ██ █████   ███████   ███   █████   █████   ██      
+ ██ ███ ██ ██      ██   ██  ███    ██      ██      ██      
+  ███ ███  ███████ ██   ██ ███████ ███████ ███████ ███████ 
     """
     
     # Print the weasel art centered
@@ -97,14 +80,43 @@ def print_welcome():
     console.print("\n")
     examples_table = Table(title="[bold white]Try asking me:[/bold white]", box=None, show_header=False)
     examples_table.add_row("🚀", "[cyan]Start rapid fire applications in NY[/cyan]")
-    examples_table.add_row("�", "[cyan]Research the latest AI news on TechCrunch[/cyan]")
+    examples_table.add_row("", "[cyan]Research the latest AI news on TechCrunch[/cyan]")
     examples_table.add_row("✈️", "[cyan]Find a cheap flight to Tokyo on Kayak[/cyan]")
-    examples_table.add_row("�", "[cyan]Go to Amazon and find a mechanical keyboard[/cyan]")
+    examples_table.add_row("", "[cyan]Go to Amazon and find a mechanical keyboard[/cyan]")
     examples_table.add_row("🛑", "[red]Stop or Exit[/red]")
     
     console.print(Align.center(examples_table))
-    console.print(Align.center(Text("\n[dim]Powered by Google Gemini Computer Use[/dim]")))
+    
+    # Bottom note
+    console.print(Align.center(Text("\n[dim]Powered by Google Gemini Computer Use[/dim]", style="dim")))
     console.print(Align.center(Text("⚠️  Experimental Desktop Control Enabled - Use with Caution", style="bold yellow")))
+    
+    # Beautiful detailed weasel art at the bottom
+    detailed_weasel = """
+⠀⠀⠀⠀⠀⠀⠀⠀⣠⡶⣛⣉⣙⢦⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⣾⠋⠁⠀⠀⠀⠑⣿⣆⠀⢠⡤⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⢸⡇⠀⡴⠋⠑⣄⢤⡤⠧⣤⣬⣦⢤⣵⣤⣀⣠⢴⣶⡶⠶⠿⠿⣶⣶⣤⡀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⢸⡇⠀⠀⠀⠀⣘⣤⠿⠛⠛⠅⠀⠀⠀⠈⠉⠙⢿⣧⡀⠀⣀⣀⣀⠀⠙⢿⢹⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⢸⡇⠀⣲⡟⡿⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠳⡿⡍⠁⠀⠙⡗⠀⠈⡇⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⢸⡇⠊⣷⠋⠰⠒⠄⠀⠀⠀⠀⠀⠀⠀⡖⡆⠀⠀⠀⠀⠈⢇⢧⠀⠀⠀⠁⠀⢸⡇⠀⠀
+⠀⠀⠀⠀⠀⠀⠘⡇⡼⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⡎⣾⣛⠀⠀⢀⡟⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⣯⠇⡴⣫⣳⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⡤⣄⠀⠀⠀⠀⠀⡇⡟⠃⠀⠀⡾⠃⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⡞⡎⣸⣿⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⣾⣿⣯⣷⣷⠀⠀⠀⠀⡇⡧⠤⠶⠛⠁⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⢰⢱⠃⡿⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⣼⡟⡷⣷⣯⡇⡇⠀⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⢀⡤⣞⣉⡍⢏⡼⠀⠘⠷⠃⠁⣀⣀⣀⠀⠀⠀⠀⣇⢿⣿⡿⢼⡾⠁⠀⠀⠀⣿⣒⡲⠶⠦⠀⠀⠀⠀⠀
+⠉⢁⠖⠉⢀⡜⣷⠀⠀⠀⠀⠀⠈⠉⠉⠀⠀⠀⠀⠛⠉⠙⠉⠉⠀⠀⠀⠀⣾⠳⢤⣄⠑⠦⡀⠀⠀⠀⠀
+⠀⣎⡤⢺⠋⠀⠘⡧⡀⠀⠸⠤⠞⢧⣀⡼⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⠟⡜⢹⡧⢄⡘⢌⠑⠦⣳⡀⠀
+⠘⠁⢠⠃⠀⡠⠔⠉⠻⢷⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⡤⠖⠡⠖⡡⠊⣿⠀⠀⠈⠳⠀⠀⠁⠀⠀
+⠀⠀⠘⠛⠉⠀⠀⠀⠀⠀⠈⣷⣍⠛⠛⠭⠭⠭⠭⠟⢋⡥⠞⠁⠀⠀⠉⠀⠀⣷⣇⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣯⠢⣝⠒⠒⠒⠒⡉⠉⠀⠀⠀⠀⠀⠀⠀⢀⠎⠀⠀⡏⢧⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⡟⢆⡀⠀⠉⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠊⠁⠀⠀⠘⣼⡆⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡜⣽⠇⠓⠤⠥⠭⠭⠭⠀⠀⠀⠀⠀⠀⠀⡆⠀⠀⠀⠀⡤⠊⢱⡘⡄⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⡼⠁⣿⡶⣒⣶⡀⠀⠀⣠⡶⠶⠒⠒⠖⠋⠀⠀⠀⡀⠀⠀⠀⣀⠔⠻⡼⡀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⡰⠁⣼⠃⠚⢁⣼⡇⠀⢰⣇⡒⠒⠂⠀⠀⠀⠀⠀⠀⣇⠀⠀⠀⠁⠀⠀⣸⣿⡀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠁⠀⠀⠈⣝⠇⠀⠀⢳⡄⠉⠁⠀⠀⠀⢀⡴⠓⠋⠀⠀⠀⠀⠀⠀⠀⠀⠘⣆
+⠀⠀⠀⠀⠀⠀⠀⠀⠧⣀⣀⡠⠶⠋⠁⠀⠀⠀⠀⠉⠉⠙⠛⠛⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+    """
+    console.print(Align.center(Text(detailed_weasel, style="dim cyan")))
     console.print("\n")
 
 from google import genai
@@ -323,28 +335,72 @@ def main():
             if browser_initialized:
                 # V2: Use Browser-Use Framework with Query Planner
                 
-                # Step 1: Plan the query (analyze, clarify, enhance)
-                enhanced_query = full_query  # Default to original
-                task_type = "general"  # Default task type
-                try:
-                    console.print("[dim]🧠 Planning your task...[/dim]")
-                    planner = QueryPlanner()
-                    enhanced_query, task_type = planner.plan(full_query)
-                    console.print("[green]✓ Planning complete![/green]\n")
-                except Exception as e:
-                    console.print(f"[yellow]⚠️  Query planner failed: {type(e).__name__}: {str(e)}[/yellow]")
-                    console.print("[dim]→ Using original query instead...[/dim]\n")
-                    # Print traceback for debugging
-                    import traceback
-                    logger.error(f"Query planner error: {traceback.format_exc()}")
-                
-                # Step 2: Execute with enhanced query and retry logic
                 # Use gemini-2.5-flash - stable model optimized for agentic use cases
                 # with higher rate limits and built-in thinking capability
                 model_name = 'gemini-2.5-flash'
                 
-                agent = BrowserAgent(model_name=model_name, headless=False, task_type=task_type)
-                agent.run_sync(enhanced_query)
+                # Create the browser agent
+                agent = BrowserAgent(model_name=model_name, headless=False)
+                
+                # Simple async flow with login pause and interactive continuation
+                import asyncio
+                
+                async def run_interactive_session():
+                    """Run agent tasks interactively, keeping browser open for multiple tasks."""
+                    current_task = full_query
+                    
+                    while True:
+                        # Run the current task
+                        # The agent can call request_login action if it needs the user to log in
+                        result = await agent.run(current_task)
+                        
+                        # Task complete - ask if user wants to continue
+                        console.print("\n")
+                        console.print(Panel(
+                            "[bold green]✅ Task Complete![/bold green]\n\n"
+                            "The browser is still open.\n\n"
+                            "• Press [bold cyan]Enter[/bold cyan] to give a new instruction\n"
+                            "• Press [bold yellow]Ctrl+C[/bold yellow] to close browser and exit",
+                            border_style="green",
+                            padding=(1, 2)
+                        ))
+                        
+                        try:
+                            # Wait for user decision
+                            await asyncio.get_event_loop().run_in_executor(
+                                None,
+                                input,
+                                "\n[Continue?] "
+                            )
+                            
+                            # Get new task from user
+                            console.print("\n")
+                            new_task = await asyncio.get_event_loop().run_in_executor(
+                                None,
+                                input,
+                                "What would you like me to do next?\n>: "
+                            )
+                            
+                            if not new_task.strip():
+                                console.print("[yellow]No task provided. Closing browser...[/yellow]")
+                                break
+                            
+                            current_task = new_task
+                            console.print(f"\n[bold cyan]🚀 Starting new task:[/bold cyan] {current_task}\n")
+                            
+                        except KeyboardInterrupt:
+                            console.print("\n[yellow]Exiting...[/yellow]")
+                            break
+                    
+                    # Clean up
+                    console.print("[dim]Closing browser session...[/dim]")
+                    await agent.browser.close()
+                    return result
+                
+                # Run the interactive session
+                asyncio.run(run_interactive_session())
+                
+                
                 
             else:
                 # Desktop-only mode - use desktop computer (Legacy)
