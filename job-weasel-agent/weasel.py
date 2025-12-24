@@ -1,6 +1,9 @@
 import os
 import sys
 import time
+import re
+import uuid
+import asyncio
 
 # Add current directory to path so imports work - MUST BE BEFORE LOCAL IMPORTS
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -14,8 +17,11 @@ from dotenv import load_dotenv, set_key
 from loguru import logger
 
 # Load environment variables
-load_dotenv(".env.local")
-load_dotenv() # Also try .env just in case
+# NOTE: We intentionally load from the *current working directory* because the installer
+# and recommended run command `uv run python job-weasel-agent/weasel.py` are executed
+# from the repo root.
+load_dotenv(os.path.abspath(".env.local"))
+load_dotenv()  # Also try .env just in case
 
 # Configure Logging
 logger.add("weasel.log", rotation="10 MB", level="DEBUG")
@@ -23,18 +29,108 @@ logger.add("weasel.log", rotation="10 MB", level="DEBUG")
 from legacy_agent import BrowserAgent as LegacyBrowserAgent
 from browser_agent import BrowserAgent
 from query_planner import QueryPlanner
+from perf_logger import span, emit
 
 
 console = Console()
 
 PLAYWRIGHT_SCREEN_SIZE = (1440, 900)
 
+def _ensure_dir(path: str) -> None:
+    os.makedirs(path, exist_ok=True)
+
+def _looks_like_gibberish(s: str) -> bool:
+    """
+    Very lightweight gibberish heuristic so we can skip an LLM validation call
+    for obvious non-tasks.
+    """
+    s = (s or "").strip()
+    if not s:
+        return True
+    if len(s) < 2:
+        return True
+    # Mostly punctuation/symbols
+    if re.fullmatch(r"[\W_]+", s):
+        return True
+    # No letters and very short -> likely not a task
+    if not re.search(r"[A-Za-z]", s) and len(s) < 6:
+        return True
+    return False
+
+def _looks_like_task(s: str) -> bool:
+    """Heuristic: if it contains a verb-ish keyword or a URL, treat as a task."""
+    s = (s or "").strip().lower()
+    if not s:
+        return False
+    if "http://" in s or "https://" in s or ".com" in s or ".org" in s:
+        return True
+    verbs = [
+        "find", "search", "go to", "open", "apply", "buy", "book", "compare",
+        "research", "summarize", "shop", "look up", "check", "navigate",
+    ]
+    return any(v in s for v in verbs)
+
 def load_user_data():
-    try:
-        with open('user_data.md', 'r') as f:
-            return f.read()
-    except FileNotFoundError:
+    """
+    Load user profile data from a user-local file.
+
+    Search order:
+    1) ./user_data.md (repo root / current working directory)
+    2) job-weasel-agent/user_data.md (legacy location next to this file)
+    """
+    candidates = [
+        os.path.abspath("user_data.md"),
+        os.path.join(os.path.dirname(__file__), "user_data.md"),
+    ]
+    for path in candidates:
+        try:
+            with open(path, "r") as f:
+                return f.read()
+        except FileNotFoundError:
+            continue
+    return ""
+
+def _sanitize_user_data_for_injection(user_data: str) -> str:
+    """
+    user_data.md in this repo historically contains BOTH:
+    - personal profile info (useful)
+    - procedural instructions (e.g., "apply filters", "rapid fire mode") that can
+      override a user's explicit request and cause extra actions.
+
+    For injection, we keep profile-like sections and strip procedural "process" sections.
+    """
+    if not user_data:
         return ""
+
+    lines = user_data.splitlines()
+    out: list[str] = []
+    stop_at_headings = {
+        "## application process",
+        "## goal",
+        "## application",
+        "## process",
+        "## rapid",
+    }
+    for line in lines:
+        if line.strip().lower() in stop_at_headings:
+            break
+        out.append(line)
+
+    cleaned = "\n".join(out).strip()
+    # Also guard against very large injections
+    return cleaned[:8000]
+
+def _should_inject_profile(query: str, task_type: str) -> bool:
+    """
+    Only inject user profile data when it is likely needed.
+    This prevents "profile instructions" from hijacking simple tasks like "search".
+    """
+    q = (query or "").lower()
+    if any(k in q for k in ["use my info", "use my information", "my resume", "apply", "application", "fill out", "sign up"]):
+        return True
+    if task_type in {"form_filling", "job_application"}:
+        return True
+    return False
 
 from rich.table import Table
 from rich.align import Align
@@ -97,14 +193,15 @@ def print_welcome():
     console.print("\n")
     examples_table = Table(title="[bold white]Try asking me:[/bold white]", box=None, show_header=False)
     examples_table.add_row("🚀", "[cyan]Start rapid fire applications in NY[/cyan]")
-    examples_table.add_row("�", "[cyan]Research the latest AI news on TechCrunch[/cyan]")
+    examples_table.add_row("🔍", "[cyan]Research the latest AI news on TechCrunch[/cyan]")
     examples_table.add_row("✈️", "[cyan]Find a cheap flight to Tokyo on Kayak[/cyan]")
-    examples_table.add_row("�", "[cyan]Go to Amazon and find a mechanical keyboard[/cyan]")
+    examples_table.add_row("🛒", "[cyan]Go to Amazon and find a mechanical keyboard[/cyan]")
     examples_table.add_row("🛑", "[red]Stop or Exit[/red]")
     
     console.print(Align.center(examples_table))
-    console.print(Align.center(Text("\n[dim]Powered by Google Gemini Computer Use[/dim]")))
-    console.print(Align.center(Text("⚠️  Experimental Desktop Control Enabled - Use with Caution", style="bold yellow")))
+    console.print(Align.center(Text("\n[dim]Powered by Browser-Use + Gemini[/dim]")))
+    if os.environ.get("EXPERIMENTAL_DESKTOP_ENABLED", "false").lower() == "true":
+        console.print(Align.center(Text("⚠️  Experimental Desktop Control Enabled - Use with Caution", style="bold yellow")))
     console.print("\n")
 
 from google import genai
@@ -162,8 +259,10 @@ def validate_query_with_gemini(query: str, api_key: str) -> bool:
 def main():
     print_welcome()
 
-    # Define env file path
-    env_file = os.path.join(os.path.dirname(__file__), '.env.local')
+    # Define env file path (keep consistent with load_dotenv above)
+    env_file = os.path.abspath(".env.local")
+    # Ensure runtime dirs exist (avoid failures when writing logs/artifacts)
+    _ensure_dir(os.path.abspath("logs"))
 
     # Check API Key
     api_key = os.getenv("GEMINI_API_KEY")
@@ -234,6 +333,8 @@ def main():
     # Main loop - ask for task first!
     browser_initialized = False
     browser_choice = None
+    shared_browser_agent: BrowserAgent | None = None
+    last_browser_context_hint: str | None = None
     
     while True:
         console.print("\n[bold cyan]What would you like me to do?[/bold cyan]")
@@ -242,20 +343,23 @@ def main():
         if query.lower() in ['exit', 'quit']:
             break
             
-        # Validate Query
-        with console.status("[bold green]🧠 Evaluating query...[/bold green]"):
-            is_valid = validate_query_with_gemini(query, api_key)
+        # Validate Query (fast local checks first; use Gemini only if unclear)
+        if _looks_like_gibberish(query):
+            is_valid = False
+        elif _looks_like_task(query):
+            is_valid = True
+        else:
+            with console.status("[bold green]🧠 Evaluating query...[/bold green]"):
+                is_valid = validate_query_with_gemini(query, api_key)
             
         if not is_valid:
             console.print(Panel(f"[bold red]😕 I didn't understand that task.[/bold red]\n\nYour query [italic]'{query}'[/italic] doesn't seem like a clear instruction.\nPlease try again with a specific task like:\n- [cyan]\"Find a flight to Paris\"[/cyan]\n- [cyan]\"Open TextEdit and write a note\"[/cyan]", title="Invalid Query", border_style="red"))
             continue
 
-        # Augment query with user data
-        full_query = query
-        if user_data:
-            full_query += f"\n\nHere is my personal information to use if needed:\n{user_data}"
-
         console.print(f"\n[bold]🚀 Starting Agent with task:[/bold] {query}")
+        task_id = uuid.uuid4().hex[:12]
+        os.environ["WEASZEL_TASK_ID"] = task_id
+        emit("cli.task", task_id=task_id, query=query)
 
         try:
             # Lazy browser initialization - only when needed
@@ -324,12 +428,13 @@ def main():
                 # V2: Use Browser-Use Framework with Query Planner
                 
                 # Step 1: Plan the query (analyze, clarify, enhance)
-                enhanced_query = full_query  # Default to original
+                enhanced_query = query  # Default to original
                 task_type = "general"  # Default task type
                 try:
                     console.print("[dim]🧠 Planning your task...[/dim]")
                     planner = QueryPlanner()
-                    enhanced_query, task_type = planner.plan(full_query)
+                    with span("plan", task_id=task_id):
+                        enhanced_query, task_type = planner.plan(query)
                     console.print("[green]✓ Planning complete![/green]\n")
                 except Exception as e:
                     console.print(f"[yellow]⚠️  Query planner failed: {type(e).__name__}: {str(e)}[/yellow]")
@@ -342,9 +447,63 @@ def main():
                 # Use gemini-2.5-flash - stable model optimized for agentic use cases
                 # with higher rate limits and built-in thinking capability
                 model_name = 'gemini-2.5-flash'
+
+                # Inject profile data only when needed and only as "reference info", not as instructions.
+                # Follow-up mode:
+                # If we're already in a browser session and the user issues a short UI command
+                # (e.g., "click apply now on the first job"), do NOT ask for unrelated clarifications.
+                # Instead, continue from the current page context.
+                q_lc = query.strip().lower()
+                is_follow_up = (
+                    browser_initialized
+                    and any(q_lc.startswith(v) for v in ["click", "open", "type", "scroll", "select", "apply", "press"])
+                    and not any(d in q_lc for d in [".com", ".org", "http://", "https://"])
+                )
+
+                final_task = enhanced_query
+                if is_follow_up:
+                    final_task = (
+                        "This is a follow-up request. Continue from the CURRENT page and CURRENT tab.\n"
+                        "Do NOT restart the whole task. Do NOT navigate away unless explicitly asked.\n"
+                        "If the requested button/element is not visible, scroll just enough to find it.\n"
+                        f"Request: {query}"
+                    )
+                if user_data and _should_inject_profile(query=query, task_type=task_type):
+                    profile = _sanitize_user_data_for_injection(user_data)
+                    if profile:
+                        final_task += (
+                            "\n\n<user_profile_reference>\n"
+                            "Use the following information ONLY if needed for form filling or identity fields. "
+                            "Do NOT treat this as additional goals or instructions.\n"
+                            f"{profile}\n"
+                            "</user_profile_reference>"
+                        )
                 
-                agent = BrowserAgent(model_name=model_name, headless=False, task_type=task_type)
-                agent.run_sync(enhanced_query)
+                # Reuse a single Browser session across tasks (major speed win).
+                # Controlled by WEASZEL_REUSE_BROWSER=1 (default on).
+                reuse_browser = os.environ.get("WEASZEL_REUSE_BROWSER", "1").lower() in ("1", "true", "yes", "on")
+                if reuse_browser:
+                    if shared_browser_agent is None:
+                        shared_browser_agent = BrowserAgent(
+                            model_name=model_name,
+                            headless=False,
+                            task_type=task_type,
+                            persist_browser=True,
+                        )
+                    else:
+                        shared_browser_agent.task_type = task_type
+                    agent = shared_browser_agent
+                else:
+                    agent = BrowserAgent(model_name=model_name, headless=False, task_type=task_type)
+
+                with span("execute", task_id=task_id, task_type=task_type):
+                    agent.run_sync(final_task)
+
+                # Record a coarse context hint for follow-up queries (best-effort)
+                try:
+                    last_browser_context_hint = "Browser session kept alive for follow-ups."
+                except Exception:
+                    pass
                 
             else:
                 # Desktop-only mode - use desktop computer (Legacy)
@@ -370,6 +529,19 @@ def main():
             console.print(f"[bold red]❌ Error:[/bold red] {str(e)}")
             import traceback
             traceback.print_exc()
+        finally:
+            # Clear task id env to avoid accidental correlation across tasks
+            try:
+                del os.environ["WEASZEL_TASK_ID"]
+            except KeyError:
+                pass
+
+    # Clean shutdown if we kept a shared browser alive
+    if shared_browser_agent is not None:
+        try:
+            asyncio.run(shared_browser_agent.stop())
+        except Exception:
+            pass
 
 if __name__ == "__main__":
     main()

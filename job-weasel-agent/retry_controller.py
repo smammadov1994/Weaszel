@@ -1,13 +1,16 @@
 import os
 import asyncio
-from typing import Dict, Optional
+import time
+from typing import Dict, Optional, Any
 from dataclasses import dataclass, field
 from collections import defaultdict
 from browser_use.llm.google.chat import ChatGoogle
-from browser_use.agent.views import AgentStepInfo
+from browser_use.agent.service import Agent
+from browser_use.browser.events import NavigateToUrlEvent
 from rich.console import Console
 from rich.prompt import Prompt
 from rich.panel import Panel
+from perf_context import current_step, current_task_id
 
 console = Console()
 
@@ -55,6 +58,7 @@ class RetryController:
         self.tracker = FailureTracker()
         self.current_website_index = 0
         self.replanning_active = False
+        self._step_start_t: dict[int, float] = {}
         
     def _normalize_goal(self, goal: str) -> str:
         """Normalize goal string for comparison"""
@@ -65,29 +69,56 @@ class RetryController:
         goal = re.sub(r'\d+', '', goal)
         return goal.strip()
     
-    async def on_step_start(self, step_info: AgentStepInfo):
+    async def on_step_start(self, agent: Agent):
         """
-        Called before each agent step.
+        Called before each agent step (Browser-Use hook signature).
         Monitor for repeated failures and trigger escalation.
         """
-        # Extract current goal from step info
-        if hasattr(step_info, 'next_goal') and step_info.next_goal:
-            current_goal = self._normalize_goal(step_info.next_goal)
-            
-            # Update tracker
+        step_num = getattr(agent.state, "n_steps", 0)
+        current_step.set(step_num)
+        self._step_start_t[step_num] = time.perf_counter()
+
+        # In Browser-Use, "next_goal" is part of the *previous* model output.
+        last_output = getattr(agent.state, "last_model_output", None)
+        next_goal = getattr(last_output, "next_goal", None) if last_output is not None else None
+        if next_goal:
+            current_goal = self._normalize_goal(next_goal)
             if current_goal != self.tracker.current_goal:
-                # New goal - reset consecutive failures but keep history
                 self.tracker.last_successful_goal = self.tracker.current_goal
                 self.tracker.current_goal = current_goal
                 self.tracker.consecutive_same_goal_failures = 0
             
-    async def on_step_end(self, step_info: AgentStepInfo):
+    async def on_step_end(self, agent: Agent):
         """
-        Called after each agent step.
+        Called after each agent step (Browser-Use hook signature).
         Check if step failed and trigger appropriate escalation.
         """
-        # Determine if step failed
-        failed = self._check_if_failed(step_info)
+        # Browser-Use increments agent.state.n_steps inside the step() call.
+        # So on_step_start sees N, but on_step_end may see N+1.
+        step_num_now = getattr(agent.state, "n_steps", 0)
+        t0 = self._step_start_t.pop(step_num_now, None)
+        step_num = step_num_now
+        if t0 is None and step_num_now > 0:
+            # Try previous step index
+            step_num = step_num_now - 1
+            t0 = self._step_start_t.pop(step_num, None)
+        if t0 is not None:
+            duration_ms = (time.perf_counter() - t0) * 1000.0
+            try:
+                from perf_logger import emit
+                emit(
+                    "agent.step",
+                    step=step_num,
+                    duration_ms=duration_ms,
+                    task_type=self.task_type,
+                    current_goal=self.tracker.current_goal,
+                    task_id=current_task_id.get(),
+                )
+            except Exception:
+                pass
+
+        # Determine if step failed via executed action results or eval text
+        failed = self._check_if_failed(agent)
         
         if failed:
             self.tracker.total_failures += 1
@@ -109,15 +140,20 @@ class RetryController:
                 await self._replan_with_screenshot()
                 return
     
-    def _check_if_failed(self, step_info: AgentStepInfo) -> bool:
+    def _check_if_failed(self, agent: Agent) -> bool:
         """
-        Determine if a step failed based on evaluation.
-        Look for failure keywords in evaluation_previous_goal.
+        Determine if a step failed.
+
+        Primary signal: any ActionResult.error produced by tool execution.
+        Secondary signal: evaluation text containing failure keywords.
         """
-        if not hasattr(step_info, 'evaluation_previous_goal'):
-            return False
-            
-        eval_text = step_info.evaluation_previous_goal or ""
+        last_result = getattr(agent.state, "last_result", None) or []
+        for r in last_result:
+            if getattr(r, "error", None):
+                return True
+
+        last_output = getattr(agent.state, "last_model_output", None)
+        eval_text = getattr(last_output, "evaluation_previous_goal", "") if last_output is not None else ""
         failure_keywords = ["failure", "failed", "error", "unsuccessful", "unable to"]
         
         return any(keyword in eval_text.lower() for keyword in failure_keywords)
@@ -197,8 +233,10 @@ Provide 3 specific alternative approaches I should try next.'''
         console.print(f"[cyan]→ Switching to: {next_website}[/cyan]\n")
         
         try:
-            # Navigate to new website
-            await self.browser_session.navigate_to(next_website)
+            # Navigate to new website (Browser-Use event-driven session)
+            event = self.browser_session.event_bus.dispatch(NavigateToUrlEvent(url=next_website, new_tab=False))
+            await event
+            await event.event_result(raise_if_any=True, raise_if_none=False)
             
             # Reset failure counters for new site
             self.tracker.consecutive_same_goal_failures = 0

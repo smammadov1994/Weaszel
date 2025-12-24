@@ -76,3 +76,7 @@ main.py
 logs/
 .venv/
 uv.lock
+
+# User-local profile (avoid accidental leaks)
+user_data.md
+job-weasel-agent/user_data.md
